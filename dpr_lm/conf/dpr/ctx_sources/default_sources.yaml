@@ -1,0 +1,4 @@
+dpr_wiki:
+  _target_: DPR.dpr.data.retriever_data.CsvCtxSrc
+  file: /network/scratch/p/parishad.behnamghader/FiD/downloads/data/wikipedia_split/psgs_w100.tsv
+  id_prefix: 'wiki:'

@@ -1,0 +1,12 @@
+
+data_file: ""
+output_file: ""
+info: ""
+
+# lm, qa
+task: "lm"
+k: 5
+lm: "fid"
+
+# facts, golden_facts, single_fact
+fact_type: "facts"

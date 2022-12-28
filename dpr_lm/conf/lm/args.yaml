@@ -1,0 +1,88 @@
+# save results
+write_results: False
+
+# save dataset with cross-attention scores
+write_crossattention_scores: False
+
+# path of train data
+train_data: 'none'
+
+# path of eval data
+eval_data: 'none'
+
+model_size: 'base'
+
+# use checkpoint in the encoder
+use_checkpoint: False
+
+# maximum number of tokens in text segments (question+passage)
+text_maxlength: 200
+
+# maximum number of tokens used to train the model, no truncation if -1
+answer_maxlength: -1
+
+# article titles not included in passages
+no_title: False
+
+n_context: 100
+
+# name of the experiment
+name: 'experiment_name'
+
+# models are saved here
+checkpoint_dir: './checkpoint/'
+
+# path for retraining
+model_path: 'none'
+
+# dataset parameters
+# Batch size per GPU/CPU for training.
+per_gpu_batch_size: 1
+
+maxload: -1
+
+# For distributed training: local_rank
+local_rank: -1
+
+# Main port (for multi-node SLURM jobs)
+main_port: -1
+
+# random seed for initialization
+seed: 0
+
+# training parameters
+# evaluate model every <eval_freq> steps during training
+eval_freq: 500
+
+# save model every <save_freq> steps during training
+save_freq: 5000
+
+# print intermdiate results of evaluation every <eval_print_freq> steps
+eval_print_freq: 1000
+
+train_batch_size: 0
+
+# slurm args
+is_slurm_job: False
+
+node_id: 1
+
+n_nodes: 1
+
+global_rank: 0
+
+world_size: 1
+
+n_gpu_per_node: 1
+
+main_addr: ''
+
+is_distributed: False
+
+is_main: False
+
+multi_node: False
+
+multi_gpu: False
+
+device: 'cuda'
