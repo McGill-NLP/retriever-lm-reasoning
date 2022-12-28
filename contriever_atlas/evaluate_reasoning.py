@@ -1,0 +1,178 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the license found in the
+# LICENSE file in the root directory of this source tree.
+import os
+from itertools import repeat
+
+import numpy as np
+import torch
+import torch.cuda
+import torch.distributed as dist
+
+from src import dist_utils, slurm, util
+from src.model_io import create_checkpoint_directories, load_or_initialize_atlas_model
+from src.options import get_options
+from src.tasks import get_task
+from src.index import DistributedIndex
+
+from misc_utils import add_my_args, compute_f1_score, save_qa_report, save_lm_report
+from utils import RetLM
+
+os.environ["TOKENIZERS_PARALLELISM"] = "true"
+
+
+def _get_eval_data_iterator(opt, data_path, task):
+    data_iterator = task.data_iterator(data_path, opt.global_rank, opt.world_size, opt=opt, is_eval=True)
+    data_iterator = filter(None, map(task.process, data_iterator, repeat(opt.reason_fact_type)))
+    # data_iterator = filter(None, map(partial(task.process, opt.my_fact_type), data_iterator))
+    data_iterator = list(task.batch_iterator(data_iterator, opt.per_gpu_batch_size))
+    if dist.is_initialized():
+        len_data = torch.tensor(len(data_iterator)).cuda()
+        dist.all_reduce(len_data, torch.distributed.ReduceOp.MAX)
+        if len(data_iterator) < len_data.item():
+            data_iterator.extend([{} for _ in range(len_data.item() - len(data_iterator))])
+    dist.barrier()
+    return data_iterator
+
+
+@torch.no_grad()
+def evaluate_lm(model, opt, step=None):
+    output_f = open(opt.reason_output_file, 'a+')
+    print('output_file_name', opt.reason_output_file)
+
+    alternative_prediction_num, first_token_prediction_num = 0, 0
+    best_alternatives, retrieved_statements, predicted_tokens_list, datas = [], [], [], []
+    save_every, total = 1000, 0
+
+    model.eval()
+    index = DistributedIndex()
+    unwrapped_model = util.get_unwrapped_model_if_wrapped(model)
+    reader_tokenizer = unwrapped_model.reader_tokenizer
+
+    task = get_task(opt, reader_tokenizer)
+
+    ret_lm = RetLM(unwrapped_model, model, reader_tokenizer, task=task, index=index)
+    data_iterator = _get_eval_data_iterator(opt, opt.reason_data_file, task)
+
+    for i, batch in enumerate(data_iterator):
+        o = ret_lm.do_lm(batch, opt=opt)
+        predicted_tokens_list += o['first_token_pred']
+        best_alternatives += o['predicted_alt']
+        retrieved_statements += o['retrieved']
+        datas += o['example']
+        first_token_prediction_num += o['hits1']
+        for p_alt in o['predicted_alt']:
+            alternative_prediction_num += int(p_alt == 0)
+        total += len(o['example'])
+
+        if (i + 1) % save_every == 0:
+            print('Writing up to sample #{} report...'.format(i))
+            save_lm_report(datas, retrieved_statements, best_alternatives, predicted_tokens_list, output_f=output_f)
+            datas, retrieved_statements, best_alternatives, predicted_tokens_list = [], [], [], []
+
+    if len(best_alternatives) > 0:
+        print('Writing up to the last sample report...')
+        save_lm_report(datas, retrieved_statements, best_alternatives, predicted_tokens_list, output_f=output_f)
+
+    print(f'\nHits@1: {(1.0 * first_token_prediction_num) / total:.4f}')
+    output_f.write(f'\nHits@1: {(1.0 * first_token_prediction_num) / total:.4f}')
+    print(f'% Correct Alternative Prediction: {(1.0 * alternative_prediction_num) / total:.4f}')
+    output_f.write(f'\n% Correct Alternative Prediction: {(1.0 * alternative_prediction_num) / total:.4f}')
+    output_f.close()
+
+
+@torch.no_grad()
+def evaluate_qa(model, opt, step=None):
+    output_f = open(opt.reason_output_file, 'a+')
+    print('output_file_name', opt.reason_output_file)
+
+    p_scores, r_scores, f_scores = [], [], []
+    save_every, total = 1000, 0
+    datas, retrieved_statements, predicted_tokens_list = [], [], []
+
+    model.eval()
+    index = DistributedIndex()
+    unwrapped_model = util.get_unwrapped_model_if_wrapped(model)
+    reader_tokenizer = unwrapped_model.reader_tokenizer
+
+    task = get_task(opt, reader_tokenizer)
+    data_iterator = _get_eval_data_iterator(opt, opt.reason_data_file, task)
+    ret_lm = RetLM(unwrapped_model, model, reader_tokenizer, task=task, index=index)
+
+    for i, batch in enumerate(data_iterator):
+        is_valid, o = ret_lm.do_qa(batch, opt=opt)
+        if not is_valid:
+            continue
+        gold = o['example']['answer']
+        p, r, f = compute_f1_score(o['gen_ans'], gold[0])
+        p_scores.append(p)
+        r_scores.append(r)
+        f_scores.append(f)
+
+        retrieved_statements.append(o['retrieved'])
+        predicted_tokens_list.append(o['gen_ans'])
+        datas.append(o['example'])
+        total += 1
+
+        if (i + 1) % save_every == 0:
+            print('Writing up to sample #{} report...'.format(i))
+            save_qa_report(datas, retrieved_statements, predicted_tokens_list, output_f=output_f)
+            datas, retrieved_statements, predicted_tokens_list = [], [], []
+
+    if len(datas) > 0:
+        print('Writing up to the last sample report...')
+        save_qa_report(datas, retrieved_statements, predicted_tokens_list, output_f=output_f)
+
+    print(f'F1 {np.mean(f_scores):.4f}, Precision {np.mean(p_scores):.4f}, Recall {np.mean(r_scores):.4f}, '
+          f'Total number of example {total}')
+    output_f.write(
+        f'F1 {np.mean(f_scores):.4f}, Precision {np.mean(p_scores):.4f}, Recall {np.mean(r_scores):.4f}, '
+        f'Total number of example {total}\n'
+    )
+    output_f.close()
+
+
+if __name__ == "__main__":
+    options = get_options()
+    add_my_args(options)
+    opt = options.parse()
+
+    if opt.reason_task == 'qa':
+        opt.task = 'qa'
+    elif opt.reason_task == 'lm':
+        opt.task = 'my_lm'
+    opt.n_context = opt.reason_k
+
+    torch.manual_seed(opt.seed)
+    slurm.init_distributed_mode(opt)
+    slurm.init_signal_handler()
+
+    checkpoint_path, saved_index_path = create_checkpoint_directories(opt)
+    logger = util.init_logger(opt.is_main, opt.is_distributed, os.path.join(checkpoint_path, "run.log"))
+    if opt.is_main:
+        options.print_options(opt)
+
+    logger.info(f"world size: {dist_utils.get_world_size()}")
+
+    model, _, _, _, _, opt, step = load_or_initialize_atlas_model(opt, eval_only=True)
+    # print('param#', sum(p.numel() for p in model.reader.parameters() if p.requires_grad))
+    # for name, parameter in model.reader.named_parameters():
+    #     print(name, parameter.numel())
+    # exit()
+    logger.info("Start Evaluation")
+    dist_utils.barrier()
+
+    assert not opt.retrieve_only
+
+    if opt.task == 'qa' and opt.reason_task == 'qa':
+        evaluate_qa(model, opt, step)
+    elif opt.task == 'my_lm' and opt.reason_task == 'lm':
+        evaluate_lm(model, opt, step)
+    else:
+        ValueError('Invalid task and my_qa params.')
+
+# port=$(shuf -i 15000-16000 -n 1)
+# python my_eval_lm.py --generation_max_length 16 --gold_score_mode "pdist" --name test --precision fp32 --reader_model_type google/t5-base-lm-adapt --text_maxlength 512 --model_path atlas_data/models/atlas_nq/base --per_gpu_batch_size 1 --n_context 40 --checkpoint_dir atlas_data/experiments --main_port $port --my-qa 1 --my-dataset entailmentbank --my-task 1 --my-part dev --my-k 3
+# python evaluate_reasoning.py --generation_max_length 16 --name reason --precision fp32 --reader_model_type google/t5-base-lm-adapt --text_maxlength 512 --model_path atlas_data/models/atlas_nq/base --per_gpu_batch_size 1 --checkpoint_dir atlas_data/experiments --main_port $port --reason_task lm --reason_data_file /network/scratch/p/parishad.behnamghader/retriever_lm_reasoning/data/lm/entailmentbank_1_dev.json --reason_output_file /network/scratch/p/parishad.behnamghader/retriever_lm_reasoning/logs/lm/atlas.txt --reason_fact_type facts
