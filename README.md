@@ -64,10 +64,10 @@ The dependencies for each model is mentioned briefly. You may want to look at ea
 <p>
 
 ##### Dependencies
-- Python 3 (tested with 3.7)
-- Pytorch (tested with 1.11.0)
-- Transformers (tested with 4.20.1)
-- NumPy
+- python 3 (tested with 3.7)
+- pytorch (tested with 1.11.0)
+- transformers (tested with 4.20.1)
+- numpy
 
 You may want to use `realm/environment.yml` as well.
 
@@ -113,10 +113,10 @@ A list of the script arguments is explained below:
 <p>
 
 ##### Dependencies
-- Python 3 (tested with 3.7)
-- Pytorch (tested with 1.11.0)
+- python 3 (tested with 3.7)
+- pytorch (tested with 1.11.0)
 - faiss-gpu (tested with 1.7.1)
-- NumPy
+- numpy
 
 You may want to use `knnlm/environment.yml` as well.
 
@@ -158,11 +158,11 @@ A list of the script arguments is explained below:
 <p>
 
 ##### Dependencies
-- Python 3 (tested with 3.7)
-- Pytorch (tested with 1.11.0)
-- Transformers (tested with 4.20.1)
+- python 3 (tested with 3.7)
+- pytorch (tested with 1.6.0)
+- transformers (tested with 3.0.2)
 - faiss-cpu (tested with 1.6.1)
-- NumPy
+- numpy
 
 You may want to use `dpr_lm/flan_environment.yml` as well.
 
@@ -209,11 +209,11 @@ A list of the script arguments is explained below:
 <p>
 
 ##### Dependencies
-- Python 3 (tested with 3.7)
-- Pytorch (tested with 1.11.0)
-- Transformers (tested with 4.18.0)
+- python 3 (tested with 3.8)
+- pytorch (tested with 1.11.0)
+- transformers (tested with 4.18.0)
 - faiss-gpu (tested with 1.7.2)
-- NumPy
+- numpy
 
 You may want to use `contriever_atlas/environment.yml` as well.
 
@@ -259,12 +259,12 @@ A list of the script arguments is explained below:
 <p>
 
 ##### Dependencies
-- Python 3 (tested with 3.7)
-- Pytorch (tested with 1.11.0)
-- Transformers (tested with 4.20.1)
+- python 3 (tested with 3.7)
+- pytorch (tested with 1.11.0)
+- transformers (tested with 4.20.1)
 - faiss (tested with 1.5.3)
 - faiss-cpu (tested with 1.6.1)
-- NumPy
+- numpy
 
 You may want to use `dpr_lm/flan_environment.yml` as well.
 
