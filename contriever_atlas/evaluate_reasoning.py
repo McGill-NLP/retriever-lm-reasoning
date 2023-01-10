@@ -17,7 +17,7 @@ from src.options import get_options
 from src.tasks import get_task
 from src.index import DistributedIndex
 
-from misc_utils import add_my_args, compute_f1_score, save_qa_report, save_lm_report
+from misc_utils import add_my_args, normalize_answer, compute_f1_score, save_qa_report, save_lm_report
 from utils import RetLM
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
@@ -106,7 +106,7 @@ def evaluate_qa(model, opt, step=None):
         if not is_valid:
             continue
         gold = o['example']['answer']
-        p, r, f = compute_f1_score(o['gen_ans'], gold[0])
+        p, r, f = compute_f1_score(normalize_answer(o['gen_ans']), normalize_answer(gold[0]))
         p_scores.append(p)
         r_scores.append(r)
         f_scores.append(f)
