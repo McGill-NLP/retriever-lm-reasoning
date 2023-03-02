@@ -58,7 +58,7 @@ We evaluate the reasoning abilities of the following retriever-augmented languag
 5. [Flan-T5 + DPR](https://huggingface.co/google/flan-t5-base)
 
 
-The dependencies for each model is mentioned briefly. You may want to look at each model's repository for more information.
+You may find the visualization of the results in `visualization.ipynb`. The dependencies for each model is mentioned briefly. You may want to look at each model's repository for more information.
 
 <details><summary>1. REALM</summary>
 <p>
