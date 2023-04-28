@@ -3,6 +3,7 @@
 
 This repository contains the source code for the evaluations in [Can Retriever-Augmented Language Models Reason? The Blame Game Between the Retriever and the Language Model](https://arxiv.org/abs/2212.09146).
 
+The code will be updated with the latest experiments soon...
 ---
 
 ### Preparing Datasets
