@@ -3,7 +3,7 @@
 
 This repository contains the source code for the evaluations in [Can Retriever-Augmented Language Models Reason? The Blame Game Between the Retriever and the Language Model](https://arxiv.org/abs/2212.09146).
 
-The code will be updated with the latest experiments soon...
+The code will be updated with DSP and Contriever+Flan experiments soon...
 
 ---
 
@@ -166,7 +166,7 @@ A list of the script arguments is explained below:
 - faiss-cpu (tested with 1.6.1)
 - numpy
 
-You may want to use `dpr_lm/flan_environment.yml` as well.
+You may want to use `dpr_lm/fid_environment.yml` as well.
 
 ##### Experiments
 In order to run the flan-t5 experiments, you must first prepare the [DPR retriever](https://github.com/facebookresearch/DPR). In these experiments, we load the `nq_retriever` checkpoints. 
