@@ -55,9 +55,9 @@ If you wish to use your own data samples, you must follow the following json dat
 We evaluate the reasoning abilities of the following retriever-augmented language models:
 1. [REALM](https://huggingface.co/docs/transformers/model_doc/realm)
 2. [kNN-LM](https://github.com/urvashik/knnlm)
-3. [FiD + DPR](https://github.com/facebookresearch/FiD)
-4. [ATLAS + Contriever](https://github.com/facebookresearch/atlas)
-5. [Flan-T5 + DPR](https://huggingface.co/google/flan-t5-base)
+3. [DPR + FiD](https://github.com/facebookresearch/FiD)
+4. [Contriever + ATLAS](https://github.com/facebookresearch/atlas)
+5. [DPR + Flan-T5](https://huggingface.co/google/flan-t5-base)
 
 
 You may find the visualization of the results in `visualization.ipynb`. The dependencies for each model is mentioned briefly. You may want to look at each model's repository for more information.
@@ -156,7 +156,7 @@ A list of the script arguments is explained below:
 - `reason_fact_type`: 'facts' (default, use `facts` key) | 'gold_facts' (use `gold_facts` key) | 'single_fact' (use `hypothesis` key)
 </p></details>
 
-<details><summary>3. FiD + DPR</summary>
+<details><summary>3. DPR + FiD</summary>
 <p>
 
 ##### Dependencies
@@ -166,14 +166,14 @@ A list of the script arguments is explained below:
 - faiss-cpu (tested with 1.6.1)
 - numpy
 
-You may want to use `dpr_lm/fid_environment.yml` as well.
+You may want to use `dpr/fid_environment.yml` as well.
 
 ##### Experiments
 In order to run the flan-t5 experiments, you must first prepare the [DPR retriever](https://github.com/facebookresearch/DPR). In these experiments, we load the `nq_retriever` checkpoints. 
 Also, we use the `nq_reader_base` checkpoint for the FiD model available in [the model's github repository](https://github.com/facebookresearch/FiD).
 The following scripts run all kinds of experiments. `dpr` arguments refer to the retriever's arguments, 'lm' arguments refer to the model's arguments, and `reason` arguments refer to the specific arguments for our experiments. 
 ```bash
-cd dpr_lm
+cd dpr
 
 #QA
 python evaluate_reasoning.py \
@@ -207,7 +207,7 @@ A list of the script arguments is explained below:
 - `lm`: 'fid' ('flan' and 'fid' models use the same base code in our experiments.)
 </p></details>
 
-<details><summary>4. ATLAS + Contriever</summary>
+<details><summary>4. Contriever + ATLAS</summary>
 <p>
 
 ##### Dependencies
@@ -217,13 +217,13 @@ A list of the script arguments is explained below:
 - faiss-gpu (tested with 1.7.2)
 - numpy
 
-You may want to use `contriever_atlas/environment.yml` as well.
+You may want to use `contriever/atlas_environment.yml` as well.
 
 ##### Experiments
 In order to run the ATLAS experiments, you must first download the preferred model from [ATLAS github](https://github.com/facebookresearch/atlas). In our experiments we load the `models/atlas_nq/base` ATLAS model.
 The following scripts run all kinds of experiments.
 ```bash
-cd contriever_atlas
+cd contriever
 port=$(shuf -i 15000-16000 -n 1)
 
 #QA
@@ -257,7 +257,7 @@ A list of the script arguments is explained below:
 - `reason_fact_type`: 'facts' (default, use `facts` key) | 'gold_facts' (use `gold_facts` key) | 'single_fact' (use `hypothesis` key)
 </p></details>
 
-<details><summary>5. Flan-T5 + DPR</summary>
+<details><summary>5. DPR + Flan-T5</summary>
 <p>
 
 ##### Dependencies
@@ -268,12 +268,12 @@ A list of the script arguments is explained below:
 - faiss-cpu (tested with 1.6.1)
 - numpy
 
-You may want to use `dpr_lm/flan_environment.yml` as well.
+You may want to use `dpr/flan_environment.yml` as well.
 
 ##### Experiments
 In order to run the flan-t5 experiments, you must first prepare the [DPR retriever](https://github.com/facebookresearch/DPR). In these experiments, we load the `nq_retriever` checkpoints. As the model, we load the `google/flan-t5-base` checkpoints of the Flan-T5 model available in [HuggingFace](https://huggingface.co/google/flan-t5-base). The following scripts run all kinds of experiments. `dpr` arguments refer to the retriever's arguments, and `reason` arguments, refer to the specific arguments for our experiments. 
 ```bash
-cd dpr_lm
+cd dpr
 
 #QA
 python evaluate_reasoning.py \
