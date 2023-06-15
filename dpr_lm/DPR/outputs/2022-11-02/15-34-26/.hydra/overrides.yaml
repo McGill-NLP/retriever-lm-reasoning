@@ -1,5 +1,0 @@
-- model_file=/network/scratch/p/parishad.behnamghader/FiD/DPR/dpr/downloads/checkpoint/retriever/single/nq/bert-base-encoder.cp
-- ctx_src=data.retriever.nq-dev
-- shard_id=0
-- num_shards=1
-- out_file=my_out_file

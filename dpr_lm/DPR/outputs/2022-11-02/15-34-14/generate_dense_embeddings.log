@@ -1,5 +1,0 @@
-[2022-11-02 15:34:14,562][root][INFO] - CFG's local_rank=-1
-[2022-11-02 15:34:14,562][root][INFO] - Env WORLD_SIZE=None
-[2022-11-02 15:34:14,649][root][INFO] - Initialized host cn-a011 as d.rank -1 on device=cuda, n_gpu=1, world size=1
-[2022-11-02 15:34:14,650][root][INFO] - 16-bits training: False 
-[2022-11-02 15:34:14,650][root][INFO] - Reading saved model from dpr/downloads/checkpoint/retriever/single/nq/bert-base-encoder.cp

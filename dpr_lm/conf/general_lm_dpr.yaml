@@ -1,5 +1,0 @@
-defaults:
-  - _self_
-  - dpr: my_dpr_args
-  - reason: args
-  - lm: args
