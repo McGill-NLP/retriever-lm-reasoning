@@ -1,0 +1,34 @@
+encoder:
+  encoder_model_type: hf_bert
+  pretrained_model_cfg: bert-base-uncased
+  pretrained_file: null
+  projection_dim: 0
+  sequence_length: 256
+  dropout: 0.1
+  fix_ctx_encoder: false
+  pretrained: true
+ctx_sources:
+  dpr_wiki:
+    _target_: dpr.data.retriever_data.CsvCtxSrc
+    file: data.wikipedia_split.psgs_w100
+    id_prefix: 'wiki:'
+model_file: checkpoint/retriever/single/nq/bert-base-encoder
+ctx_src: data.retriever.nq-dev
+encoder_type: ctx
+out_file: my_out_file
+do_lower_case: true
+shard_id: 0
+num_shards: 1
+batch_size: 32
+tables_as_passages: false
+special_tokens: null
+tables_chunk_sz: 100
+tables_split_type: type1
+local_rank: -1
+device: null
+distributed_world_size: null
+distributed_port: null
+no_cuda: false
+n_gpu: null
+fp16: false
+fp16_opt_level: O1

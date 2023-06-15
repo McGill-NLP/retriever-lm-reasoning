@@ -1,0 +1,80 @@
+model_file: /network/scratch/p/parishad.behnamghader/FiD/DPR/dpr/downloads/checkpoint/retriever/single/nq/bert-base-encoder.cp
+ctx_src: dpr_wiki
+encoder_type: ctx
+out_file: my_out_file
+do_lower_case: true
+shard_id: 0
+num_shards: 1
+batch_size: 32
+tables_as_passages: false
+special_tokens: null
+tables_chunk_sz: 100
+tables_split_type: type1
+local_rank: -1
+device: null
+distributed_world_size: null
+distributed_port: null
+no_cuda: false
+n_gpu: null
+fp16: false
+fp16_opt_level: O1
+encoder:
+  encoder_model_type: hf_bert
+  pretrained_model_cfg: bert-base-uncased
+  pretrained_file: null
+  projection_dim: 0
+  sequence_length: 256
+  dropout: 0.1
+  fix_ctx_encoder: false
+  pretrained: true
+ctx_sources:
+  dpr_wiki:
+    _target_: dpr.data.retriever_data.CsvCtxSrc
+    file: data.wikipedia_split.psgs_w100
+    id_prefix: 'wiki:'
+my_arg:
+  sample_num: 5000
+  max_cand_num: 30
+  output_dir: /network/scratch/p/parishad.behnamghader/FiD/my_output/
+  data_dir: /network/scratch/p/parishad.behnamghader/FiD/open_domain_data/reason/
+  lm_result_suffix: ''
+  dataset: entailmentbank
+  part: train
+  task: 1
+  sqa_yes: 0
+  k: 100
+fid:
+  write_results: false
+  write_crossattention_scores: false
+  train_data: none
+  eval_data: none
+  model_size: base
+  use_checkpoint: false
+  text_maxlength: 200
+  answer_maxlength: -1
+  no_title: false
+  n_context: 100
+  name: experiment_name
+  checkpoint_dir: ./checkpoint/
+  model_path: none
+  per_gpu_batch_size: 1
+  maxload: -1
+  local_rank: -1
+  main_port: -1
+  seed: 0
+  eval_freq: 500
+  save_freq: 5000
+  eval_print_freq: 1000
+  train_batch_size: 0
+  is_slurm_job: false
+  node_id: 1
+  n_nodes: 1
+  global_rank: 0
+  world_size: 1
+  n_gpu_per_node: 1
+  main_addr: ''
+  is_distributed: false
+  is_main: false
+  multi_node: false
+  multi_gpu: false
+  device: cuda

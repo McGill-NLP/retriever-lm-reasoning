@@ -1,0 +1,5 @@
+- model_file=dpr/downloads/checkpoint/retriever/single/nq/bert-base-encoder
+- ctx_src=data.retriever.nq-dev
+- shard_id=0
+- num_shards=1
+- out_file=my_out_file
