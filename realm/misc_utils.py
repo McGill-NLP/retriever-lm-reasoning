@@ -1,6 +1,7 @@
 import string
 from argparse import ArgumentParser
 
+import json
 import regex
 import torch
 
@@ -23,33 +24,36 @@ def arg_parser():
 
 def save_lm_report_prediction(datas, retrieved_statements, predicted_tokens_list, output_f=None, tokenizer=None):
     for i, d in enumerate(datas):
-        output_f.write('Query: {}\n'.format(d['query']))
-        output_f.write('Retrieved: {}\n'.format(' | '.join(retrieved_statements[i])))
-        output_f.write('Expected: {}\n'.format(d['target'][0]))
-        output_f.write('Generated: {}\n'.format(tokenizer.decode([predicted_tokens_list[i][0]])))
+        o = {}
+        o['query'] = d['query']
+        o['retrieved_statements'] = retrieved_statements[i]
+        o['expected'] = d['target'][0]
+        o['predicted'] = tokenizer.decode([predicted_tokens_list[i][0]])
 
-        output_f.write('\n')
+        output_f.write(json.dumps(o) + '\n')
 
 
 def save_lm_report_target_ranking(datas, retrieved_statements, predicted_alt, output_f=None):
     for i, d in enumerate(datas):
-        output_f.write('Query: {}\n'.format(d['query']))
-        output_f.write('Retrieved: {}\n'.format(' | '.join(retrieved_statements[i])))
-        output_f.write('Alternatives: {}\n'.format(d['target']))
-        output_f.write(
-            '{} Preferred: {}\n'.format('+' if predicted_alt[i] == 0 else '-', d['target'][predicted_alt[i]]))
+        o = {}
+        o['query'] = d['query']
+        o['retrieved_statements'] = retrieved_statements[i]
+        o['alternatives'] = d['target']
+        o['ranked_target'] = d['target'][predicted_alt[i]]
+        o['ranked_correctly'] = True if predicted_alt[i] == 0 else False
 
-        output_f.write('\n')
+        output_f.write(json.dumps(o) + '\n')
 
 
 def save_qa_report(datas, queries, retrieved_statements, predicted_ans_list, output_f=None):
     for i, data in enumerate(datas):
-        output_f.write('Query: {}\n'.format(queries[i]))
-        output_f.write('Retrieved: {}\n'.format(' | '.join(retrieved_statements[i])))
-        output_f.write('Expected: {}\n'.format(data['answer'][0]))
-        output_f.write('Generated: {}\n'.format(predicted_ans_list[i]))
+        o = {}
+        o['query'] = queries[i]
+        o['retrieved_statements'] = retrieved_statements[i]
+        o['answer'] = data['answer'][0]
+        o['response'] = predicted_ans_list[i]
 
-        output_f.write('\n')
+        output_f.write(json.dumps(o) + '\n')
 
 
 def normalize_answer(s):

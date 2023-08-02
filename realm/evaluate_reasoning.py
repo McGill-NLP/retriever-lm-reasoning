@@ -85,11 +85,11 @@ def test_qa(args):
                                                                                           np.mean(p_scores),
                                                                                           np.mean(r_scores),
                                                                                           all_valid_samples))
-    output_f.write(
-        '\nF1 {:.4f}, Precision {:.4f}, Recall {:.4f}, Total number of example {}\n'.format(np.mean(f_scores),
-                                                                                          np.mean(p_scores),
-                                                                                          np.mean(r_scores),
-                                                                                          all_valid_samples))
+    output_f.write(json.dumps({"scores": 
+                               {"F1": "{:.4f}".format(np.mean(f_scores)), 
+                                "Precision": "{:.4f}".format(np.mean(p_scores)), 
+                                "Recall": "{:.4f}".format(np.mean(r_scores))},
+                                "# examples": all_valid_samples}) + '\n')
     output_f.close()
 
 
@@ -186,16 +186,19 @@ def test_lm(args):
             save_lm_report_prediction(datas, retrieved_statements, predicted_tokens_list, output_f=output_f,
                                 tokenizer=tokenizer)
         top1, top5 = top[1], top[5]
-        output_f.write(
-            '\nHits@1: {:.4f}, Hits@5: {:.4f}'.format(float(top1) / all_valid_samples, float(top5) / all_valid_samples))
+        output_f.write(json.dumps({"scores": 
+                                   {"Hits@1": "{:.4f}".format(float(top1) / all_valid_samples), 
+                                    "Hits@5": "{:.4f}".format(float(top5) / all_valid_samples)},
+                                    "# examples": all_valid_samples}) + '\n')
         print(
             '\nHits@1: {:.4f}, Hits@5: {:.4f}'.format(float(top1) / all_valid_samples, float(top5) / all_valid_samples))
     if args.reason_lm_task == 'target_ranking':
         if len(datas) > 0:
             save_lm_report_target_ranking(datas, retrieved_statements, best_alternatives, output_f=output_f)
-        output_f.write(
-            '\n% Correct Alternative Prediction: {}\n'.format(float(alternative_prediction) / all_valid_samples))
-        print('\n% Correct Alternative Prediction: {}'.format(float(alternative_prediction) / all_valid_samples))
+        output_f.write(json.dumps({"scores": 
+                                   {"Target ranking accuracy": "{:.4f}".format(float(alternative_prediction) / all_valid_samples)}, 
+                                    "# examples": all_valid_samples}) + '\n')
+        print('\n% Target ranking accuracy: {}'.format(float(alternative_prediction) / all_valid_samples))
     output_f.close()
 
 
