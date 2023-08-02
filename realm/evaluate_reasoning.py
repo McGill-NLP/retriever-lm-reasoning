@@ -6,7 +6,7 @@ import torch
 import transformers
 
 from misc_utils import arg_parser, compute_f1_score, get_hits_at_k, \
-    save_lm_report_alt, save_lm_report_pred, save_qa_report
+    save_lm_report_target_ranking, save_lm_report_prediction, save_qa_report
 from utils import RetLM, load_models
 
 
@@ -94,7 +94,7 @@ def test_qa(args):
 
 
 def test_lm(args):
-    assert args.reason_lm_task in {'alt', 'pred'}
+    assert args.reason_lm_task in {'target_ranking', 'prediction'}
 
     hitsk = [1, 5]
     run_id = 0
@@ -148,7 +148,7 @@ def test_lm(args):
         is_valid, o = ret_lm.get_answer(query, targets, candidates_info, retrieve_k)
         if not is_valid:
             continue
-        if args.reason_lm_task == 'alt':
+        if args.reason_lm_task == 'target_ranking':
             predicted_alt = o['predicted_alt']
             if predicted_alt == 0:
                 alternative_prediction += 1
@@ -159,10 +159,10 @@ def test_lm(args):
             best_alternatives.append(predicted_alt)
 
             if (sample_id + 1) % save_every == 0:
-                save_lm_report_alt(datas, retrieved_statements, best_alternatives, output_f=output_f)
+                save_lm_report_target_ranking(datas, retrieved_statements, best_alternatives, output_f=output_f)
                 datas, retrieved_statements, best_alternatives = [], [], []
 
-        elif args.reason_lm_task == 'pred':
+        elif args.reason_lm_task == 'prediction':
             logits = o['logits']
             target = o['target']
             token_probs = torch.softmax(logits, dim=-1)
@@ -178,21 +178,21 @@ def test_lm(args):
             predicted_tokens_list.append(predicted_tokens_1)
 
             if (sample_id + 1) % save_every == 0:
-                save_lm_report_pred(datas, retrieved_statements, predicted_tokens_list, output_f=output_f,
+                save_lm_report_prediction(datas, retrieved_statements, predicted_tokens_list, output_f=output_f,
                                     tokenizer=tokenizer)
                 datas, enriched_queries, predicted_tokens_list = [], [], []
-    if args.reason_lm_task == 'pred':
+    if args.reason_lm_task == 'prediction':
         if len(datas) > 0:
-            save_lm_report_pred(datas, retrieved_statements, predicted_tokens_list, output_f=output_f,
+            save_lm_report_prediction(datas, retrieved_statements, predicted_tokens_list, output_f=output_f,
                                 tokenizer=tokenizer)
         top1, top5 = top[1], top[5]
         output_f.write(
             '\nHits@1: {:.4f}, Hits@5: {:.4f}'.format(float(top1) / all_valid_samples, float(top5) / all_valid_samples))
         print(
             '\nHits@1: {:.4f}, Hits@5: {:.4f}'.format(float(top1) / all_valid_samples, float(top5) / all_valid_samples))
-    if args.reason_lm_task == 'alt':
+    if args.reason_lm_task == 'target_ranking':
         if len(datas) > 0:
-            save_lm_report_alt(datas, retrieved_statements, best_alternatives, output_f=output_f)
+            save_lm_report_target_ranking(datas, retrieved_statements, best_alternatives, output_f=output_f)
         output_f.write(
             '\n% Correct Alternative Prediction: {}\n'.format(float(alternative_prediction) / all_valid_samples))
         print('\n% Correct Alternative Prediction: {}'.format(float(alternative_prediction) / all_valid_samples))

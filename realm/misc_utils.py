@@ -14,14 +14,14 @@ def arg_parser():
     parser.add_argument("--reason_output_file", type=str, required=True)
     parser.add_argument("--reason_info", type=str, default="")
 
-    parser.add_argument("--reason_lm_task", type=str, default='alt')  # alt, pred
+    parser.add_argument("--reason_lm_task", type=str, default='target_ranking')  # target_ranking, prediction
     parser.add_argument("--reason_fact_type", type=str, default='facts')  # facts, gold_facts, single_fact
     parser.add_argument("--reason_task", type=str, default='lm')  # lm, qa
 
     return parser
 
 
-def save_lm_report_pred(datas, retrieved_statements, predicted_tokens_list, output_f=None, tokenizer=None):
+def save_lm_report_prediction(datas, retrieved_statements, predicted_tokens_list, output_f=None, tokenizer=None):
     for i, d in enumerate(datas):
         output_f.write('Query: {}\n'.format(d['query']))
         output_f.write('Retrieved: {}\n'.format(' | '.join(retrieved_statements[i])))
@@ -31,7 +31,7 @@ def save_lm_report_pred(datas, retrieved_statements, predicted_tokens_list, outp
         output_f.write('\n')
 
 
-def save_lm_report_alt(datas, retrieved_statements, predicted_alt, output_f=None):
+def save_lm_report_target_ranking(datas, retrieved_statements, predicted_alt, output_f=None):
     for i, d in enumerate(datas):
         output_f.write('Query: {}\n'.format(d['query']))
         output_f.write('Retrieved: {}\n'.format(' | '.join(retrieved_statements[i])))

@@ -66,7 +66,7 @@ class RetLM():
             ValueError('Invalid task for RetLM.')
 
     def tokenize_lm_query(self, query, target_texts):
-        if self.lm_task == 'alt':
+        if self.lm_task == 'target_ranking':
             target_texts = target_texts
             targets = self.tokenizer(target_texts, return_tensors="pt", max_length=512, truncation=True,
                                      padding=True).input_ids[:, 1:-1]
@@ -189,10 +189,16 @@ class RetLM():
 
             relevant_candidates, rel_scores = self.get_topk_candidates(masked_query_inputs.to(self.device),
                                                                        candidates_info['emb'], my_scorer, k)
+            relevant_cand_scores = torch.log_softmax(rel_scores, dim=-1)[torch.arange(rel_scores.shape[0]).unsqueeze(1), relevant_candidates]
             texts = []
             retrieved_statements = [[] for _ in range(alt_num)]
+            true_tokens = masked_query_inputs.input_ids.clone()
+            sent_scores = None
+            mask_scores = torch.zeros(alt_num, 1)
+            enriched_q = []
             for i in range(alt_num):
-                combined_cand = ''
+                texts = []
+                enriched_q.append(masked_query_text[i] + " [SEP] ")
                 for j in range(len(relevant_candidates[i])):
                     tmp = candidates_texts[relevant_candidates[i, j]]
                     if isinstance(tmp, str):
@@ -200,23 +206,24 @@ class RetLM():
                     else:
                         candidate_text_ = tmp.decode('UTF-8')
                     retrieved_statements[i].append(candidate_text_)
-                    combined_cand += candidate_text_ + ' '
-                texts.append('{} [SEP] {}'.format(masked_query_text[i], combined_cand))
-            inputs = self.tokenizer(texts, return_tensors="pt", max_length=512, truncation=True, padding=True).to(
-                self.device)
+                    enriched_q[-1] += candidate_text_ + " | "
+                    texts.append('{} [SEP] {}'.format(masked_query_text[i], candidate_text_))
+                inputs = self.tokenizer(texts, return_tensors="pt", max_length=512, truncation=True, padding=True).to(
+                    self.device)
+                outputs = self.encoder(**inputs)
 
-            outputs = self.encoder(**inputs)
-
-            true_tokens = masked_query_inputs.input_ids.clone()
-            sent_scores = []
-            mask_scores = torch.zeros(alt_num, 1)
-            for i in range(alt_num):
-                true_tokens[i][true_tokens[i] == 103] = targets[i].to(self.device)
+                cand_sent_scores = []
+                cand_mask_scores = torch.zeros(len(relevant_candidates[i]))
                 tokens_num_wout_pad = (true_tokens[i] > 0).sum()
-                sent_scores.append(torch.log_softmax(
-                    outputs.logits[i, torch.arange(tokens_num_wout_pad), true_tokens[i][:tokens_num_wout_pad]], dim=-1))
-                mask_scores[i] = torch.mean(
-                    sent_scores[-1][masked_query_inputs.input_ids[i][:tokens_num_wout_pad] == 103], dim=-1)
+                for cand in range(len(relevant_candidates[i])):
+                    cand_sent_scores.append(torch.log_softmax(
+                        outputs.logits[cand, torch.arange(tokens_num_wout_pad), :], dim=-1)[torch.arange(tokens_num_wout_pad), true_tokens[i][:tokens_num_wout_pad]])
+                    cand_mask_scores[cand] = torch.mean(
+                        cand_sent_scores[-1][masked_query_inputs.input_ids[i][:tokens_num_wout_pad] == 103], dim=-1)
+                cand_mask_scores = cand_mask_scores.to(relevant_cand_scores.device)
+                
+                # log (1/C \sum{ p(z|x)p(y|z) })
+                mask_scores[i] = torch.logsumexp((relevant_cand_scores[i] + cand_mask_scores), 0) - torch.log(torch.tensor(len(relevant_candidates[i])*1.0))
 
             return {
                 'alternative_mask_scores': mask_scores,
@@ -225,17 +232,17 @@ class RetLM():
                 'retrieved': retrieved_statements[0],
             }
 
-        if self.lm_task == 'alt':
+        if self.lm_task == 'target_ranking':
             o = do_model_preference(query_info, candidates_info)
             alt_tgt_scores = o['alternative_mask_scores'].view(-1)
             retrieveds = o['retrieved']
             best_alternative = torch.argmax(alt_tgt_scores, dim=-1)
             return True, {'predicted_alt': best_alternative, 'query': query, 'retrieved': retrieveds}
-        elif self.lm_task == 'pred':
+        elif self.lm_task == 'prediction':
             o = do_next_token_prediction(query_info, candidates_info)
             return True, o
         else:
-            ValueError('Invalid lm method. Should be either alt or pred')
+            ValueError('Invalid lm method. Should be either target_ranking or prediction')
 
     def do_qa(self, query, _, candidates_info, k):
         self.qa_model.config.reader_beam_size = k
