@@ -48,7 +48,7 @@ class CandidateScorer():
 
 class RetLM():
     def __init__(self, task, tokenizer=None, qa_model=None, query_embedder=None, encoder=None, device=None,
-                 lm_task=None):
+                 lm_task=None, dataset=None):
         self.task = task
         self.tokenizer = tokenizer
         self.qa_model = qa_model
@@ -57,6 +57,8 @@ class RetLM():
         self.device = device
         if task == 'qa':
             self.get_answer = self.do_qa
+        elif task == 'compare_qa':
+            self.get_answer = self.do_comparison_qa
         elif task == 'lm':
             self.lm_task = lm_task
             self.get_answer = self.do_lm
@@ -64,7 +66,7 @@ class RetLM():
             ValueError('Invalid task for RetLM.')
 
     def tokenize_lm_query(self, query, target_texts):
-        if self.lm_task == 'alt':
+        if self.lm_task == 'target_ranking':
             target_texts = target_texts
             targets = self.tokenizer(target_texts, return_tensors="pt", max_length=512, truncation=True,
                                      padding=True).input_ids[:, 1:-1]
@@ -187,10 +189,16 @@ class RetLM():
 
             relevant_candidates, rel_scores = self.get_topk_candidates(masked_query_inputs.to(self.device),
                                                                        candidates_info['emb'], my_scorer, k)
+            relevant_cand_scores = torch.log_softmax(rel_scores, dim=-1)[torch.arange(rel_scores.shape[0]).unsqueeze(1), relevant_candidates]
             texts = []
             retrieved_statements = [[] for _ in range(alt_num)]
+            true_tokens = masked_query_inputs.input_ids.clone()
+            sent_scores = None
+            mask_scores = torch.zeros(alt_num, 1)
+            enriched_q = []
             for i in range(alt_num):
-                combined_cand = ''
+                texts = []
+                enriched_q.append(masked_query_text[i] + " [SEP] ")
                 for j in range(len(relevant_candidates[i])):
                     tmp = candidates_texts[relevant_candidates[i, j]]
                     if isinstance(tmp, str):
@@ -198,23 +206,24 @@ class RetLM():
                     else:
                         candidate_text_ = tmp.decode('UTF-8')
                     retrieved_statements[i].append(candidate_text_)
-                    combined_cand += candidate_text_ + ' '
-                texts.append('{} [SEP] {}'.format(masked_query_text[i], combined_cand))
-            inputs = self.tokenizer(texts, return_tensors="pt", max_length=512, truncation=True, padding=True).to(
-                self.device)
+                    enriched_q[-1] += candidate_text_ + " | "
+                    texts.append('{} [SEP] {}'.format(masked_query_text[i], candidate_text_))
+                inputs = self.tokenizer(texts, return_tensors="pt", max_length=512, truncation=True, padding=True).to(
+                    self.device)
+                outputs = self.encoder(**inputs)
 
-            outputs = self.encoder(**inputs)
-
-            true_tokens = masked_query_inputs.input_ids.clone()
-            sent_scores = []
-            mask_scores = torch.zeros(alt_num, 1)
-            for i in range(alt_num):
-                true_tokens[i][true_tokens[i] == 103] = targets[i].to(self.device)
+                cand_sent_scores = []
+                cand_mask_scores = torch.zeros(len(relevant_candidates[i]))
                 tokens_num_wout_pad = (true_tokens[i] > 0).sum()
-                sent_scores.append(torch.log_softmax(
-                    outputs.logits[i, torch.arange(tokens_num_wout_pad), true_tokens[i][:tokens_num_wout_pad]], dim=-1))
-                mask_scores[i] = torch.mean(
-                    sent_scores[-1][masked_query_inputs.input_ids[i][:tokens_num_wout_pad] == 103], dim=-1)
+                for cand in range(len(relevant_candidates[i])):
+                    cand_sent_scores.append(torch.log_softmax(
+                        outputs.logits[cand, torch.arange(tokens_num_wout_pad), :], dim=-1)[torch.arange(tokens_num_wout_pad), true_tokens[i][:tokens_num_wout_pad]])
+                    cand_mask_scores[cand] = torch.mean(
+                        cand_sent_scores[-1][masked_query_inputs.input_ids[i][:tokens_num_wout_pad] == 103], dim=-1)
+                cand_mask_scores = cand_mask_scores.to(relevant_cand_scores.device)
+                
+                # log (1/C \sum{ p(z|x)p(y|z) })
+                mask_scores[i] = torch.logsumexp((relevant_cand_scores[i] + cand_mask_scores), 0) - torch.log(torch.tensor(len(relevant_candidates[i])*1.0))
 
             return {
                 'alternative_mask_scores': mask_scores,
@@ -223,19 +232,19 @@ class RetLM():
                 'retrieved': retrieved_statements[0],
             }
 
-        if self.lm_task == 'alt':
+        if self.lm_task == 'target_ranking':
             o = do_model_preference(query_info, candidates_info)
             alt_tgt_scores = o['alternative_mask_scores'].view(-1)
             retrieveds = o['retrieved']
             best_alternative = torch.argmax(alt_tgt_scores, dim=-1)
             return True, {'predicted_alt': best_alternative, 'query': query, 'retrieved': retrieveds}
-        elif self.lm_task == 'pred':
+        elif self.lm_task == 'prediction':
             o = do_next_token_prediction(query_info, candidates_info)
             return True, o
         else:
-            ValueError('Invalid lm method. Should be either alt or pred')
+            ValueError('Invalid lm method. Should be either target_ranking or prediction')
 
-    def do_qa(self, query, candidates_info, k):
+    def do_qa(self, query, _, candidates_info, k):
         self.qa_model.config.reader_beam_size = k
         self.qa_model.reader.reader_beam_size = k
         self.qa_model.config.searcher_beam_size = k
@@ -265,6 +274,44 @@ class RetLM():
             retrieveds = [candidates_texts[i] for i in retrieved_blocks_ids]
 
         return {'query': query, 'retrieved': retrieveds, 'answer': predicted_answer}
+    
+    def do_comparison_qa(self, query, options, candidates_info, k):
+        self.qa_model.config.reader_beam_size = k
+        self.qa_model.reader.reader_beam_size = k
+        self.qa_model.config.searcher_beam_size = k
+
+        if k == 0:
+            candidates_info['text'] = ['']
+            k = 1
+        query_ids = self.tokenizer(query, return_tensors="pt").to(self.device)
+
+        option_ids = []
+        for option in options:
+            option_ids.append(self.tokenizer([option], add_special_tokens=False, return_token_type_ids=False, return_attention_mask = False).input_ids)
+
+        candidates_texts = candidates_info['text']
+        scorer = CandidateScorer(self.qa_model.embedder)
+        candidates_inputs = self.tokenizer.batch_encode_candidates(candidates_texts, max_length=512, truncation=True,
+                                                                   padding=True, return_tensors="pt").to(self.device)
+        candidates_info['emb'] = scorer.embed(candidates_inputs)
+
+        # original  qa_model.block_emb 13353718 x 128
+        # new       qa_model.block_emb F x 128
+        self.qa_model.block_emb = candidates_info['emb']
+        self.qa_model.retriever.block_records = np.char.encode(np.array(candidates_info['text']))
+        options_loss = torch.zeros(len(options))
+        for option_i, option_id in enumerate(option_ids):
+            reader_output, predicted_answer_ids, pred_block, retrieved_blocks_ids = self.qa_model(**query_ids, 
+                                                                                                  answer_ids=option_id,
+                                                                                                  return_dict=False,
+                                                                                                  k=k)
+            options_loss[option_i] = reader_output.loss
+        if len(retrieved_blocks_ids.shape) == 0:
+            retrieveds = [candidates_texts[retrieved_blocks_ids]]
+        else:
+            retrieveds = [candidates_texts[i] for i in retrieved_blocks_ids]
+
+        return {'query': query, 'retrieved': retrieveds, 'answer': options[torch.argmin(options_loss)]}
 
 
 def load_models(args, device=None):

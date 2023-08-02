@@ -81,34 +81,28 @@ cd realm
 #QA
 python evaluate_reasoning.py \
   --reason_data_file <absolute address of the preprocessed json data file> \
-  --reason_output_file <absolute address of a report.txt file> \
+  --reason_output_file <absolute address of a report.jsonl file> \
   --reason_task qa
   --reason_k 5
+  --reason_dataset <entailmentbank / strategyqa>
   
-#LM (model preference)
+#LM (target ranking)
 python evaluate_reasoning.py \
   --reason_data_file <absolute address of the preprocessed json data file> \
-  --reason_output_file <absolute address of a report.txt file> \
+  --reason_output_file <absolute address of a report.jsonl file> \
   --reason_task lm
   --reason_k 5
-  --reason_lm_task alt
-
-#LM (masked token prediction)
-python evaluate_reasoning.py \
-  --reason_data_file <absolute address of the preprocessed json data file> \
-  --reason_output_file <absolute address of a report.txt file> \
-  --reason_task lm
-  --reason_k 5
-  --reason_lm_task pred
+  --reason_dataset <entailmentbank / strategyqa>
 ```
 
 A list of the script arguments is explained below:
 - `reason_k`: number of retrieved statements
 - `reason_data_file`: absolute address of the preprocessed json data file with the above-mentioned format
-- `reason_output_file`: absolute address of a report.txt file
+- `reason_output_file`: absolute address of a report.jsonl file
 - `reason_task`: 'qa' | 'lm'
-- `reason_lm_task`: 'alt' (model preference) | 'pred' (masked token prediction)
+- `reason_lm_task`: 'target_ranking' (model preference) | 'prediction' (masked token prediction)
 - `reason_fact_type`: 'facts' (default, use `facts` key) | 'gold_facts' (use `gold_facts` key) | 'single_fact' (use `hypothesis` key)
+- `reason_dataset`: 'entailmentbank' | 'strategyqa'
 </p></details>
 
 <details><summary>2. kNN-LM</summary>

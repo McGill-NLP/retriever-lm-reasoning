@@ -6,7 +6,7 @@ import torch
 import transformers
 
 from misc_utils import arg_parser, compute_f1_score, get_hits_at_k, \
-    save_lm_report_alt, save_lm_report_pred, save_qa_report
+    save_lm_report_target_ranking, save_lm_report_prediction, save_qa_report
 from utils import RetLM, load_models
 
 
@@ -30,6 +30,8 @@ def test_qa(args):
     models = load_models(args, device=device)
     tokenizer = models['tokenizer']
     qa_model = models['qa_model']
+    if args.reason_dataset == 'strategyqa':
+        args.reason_task = 'compare_qa'
     ret_lm = RetLM(args.reason_task, tokenizer=tokenizer, qa_model=qa_model, device=args.reason_device)
 
     output_f = open(args.reason_output_file, 'a+')
@@ -55,11 +57,18 @@ def test_qa(args):
         else:
             ValueError('{} is not a valid fact-type argument.'.format(args.reason_fact_type))
 
+        if args.reason_dataset == 'strategyqa':
+            options = target.copy()
+            options.sort()
+            options.reverse()
+            facts = [f + ' ' + ' / '.join(options) + ' .' for f in facts]
+
         if len(facts) < 1:
             continue
         candidates_info = {'text': facts}
         retrieve_k = min(len(facts), args.reason_k)
-        o = ret_lm.get_answer(query, candidates_info, retrieve_k)
+        if 'qa' in args.reason_task:
+            o = ret_lm.get_answer(query, target, candidates_info, retrieve_k)
         p, r, f = compute_f1_score(o['answer'], target[0])
         f_scores.append(f)
         p_scores.append(p)
@@ -76,16 +85,16 @@ def test_qa(args):
                                                                                           np.mean(p_scores),
                                                                                           np.mean(r_scores),
                                                                                           all_valid_samples))
-    output_f.write(
-        '\nF1 {:.4f}, Precision {:.4f}, Recall {:.4f}, Total number of example {}\n'.format(np.mean(f_scores),
-                                                                                          np.mean(p_scores),
-                                                                                          np.mean(r_scores),
-                                                                                          all_valid_samples))
+    output_f.write(json.dumps({"scores": 
+                               {"F1": "{:.4f}".format(np.mean(f_scores)), 
+                                "Precision": "{:.4f}".format(np.mean(p_scores)), 
+                                "Recall": "{:.4f}".format(np.mean(r_scores))},
+                                "# examples": all_valid_samples}) + '\n')
     output_f.close()
 
 
 def test_lm(args):
-    assert args.reason_lm_task in {'alt', 'pred'}
+    assert args.reason_lm_task in {'target_ranking', 'prediction'}
 
     hitsk = [1, 5]
     run_id = 0
@@ -139,7 +148,7 @@ def test_lm(args):
         is_valid, o = ret_lm.get_answer(query, targets, candidates_info, retrieve_k)
         if not is_valid:
             continue
-        if args.reason_lm_task == 'alt':
+        if args.reason_lm_task == 'target_ranking':
             predicted_alt = o['predicted_alt']
             if predicted_alt == 0:
                 alternative_prediction += 1
@@ -150,10 +159,10 @@ def test_lm(args):
             best_alternatives.append(predicted_alt)
 
             if (sample_id + 1) % save_every == 0:
-                save_lm_report_alt(datas, retrieved_statements, best_alternatives, output_f=output_f)
+                save_lm_report_target_ranking(datas, retrieved_statements, best_alternatives, output_f=output_f)
                 datas, retrieved_statements, best_alternatives = [], [], []
 
-        elif args.reason_lm_task == 'pred':
+        elif args.reason_lm_task == 'prediction':
             logits = o['logits']
             target = o['target']
             token_probs = torch.softmax(logits, dim=-1)
@@ -169,24 +178,27 @@ def test_lm(args):
             predicted_tokens_list.append(predicted_tokens_1)
 
             if (sample_id + 1) % save_every == 0:
-                save_lm_report_pred(datas, retrieved_statements, predicted_tokens_list, output_f=output_f,
+                save_lm_report_prediction(datas, retrieved_statements, predicted_tokens_list, output_f=output_f,
                                     tokenizer=tokenizer)
                 datas, enriched_queries, predicted_tokens_list = [], [], []
-    if args.reason_lm_task == 'pred':
+    if args.reason_lm_task == 'prediction':
         if len(datas) > 0:
-            save_lm_report_pred(datas, retrieved_statements, predicted_tokens_list, output_f=output_f,
+            save_lm_report_prediction(datas, retrieved_statements, predicted_tokens_list, output_f=output_f,
                                 tokenizer=tokenizer)
         top1, top5 = top[1], top[5]
-        output_f.write(
-            '\nHits@1: {:.4f}, Hits@5: {:.4f}'.format(float(top1) / all_valid_samples, float(top5) / all_valid_samples))
+        output_f.write(json.dumps({"scores": 
+                                   {"Hits@1": "{:.4f}".format(float(top1) / all_valid_samples), 
+                                    "Hits@5": "{:.4f}".format(float(top5) / all_valid_samples)},
+                                    "# examples": all_valid_samples}) + '\n')
         print(
             '\nHits@1: {:.4f}, Hits@5: {:.4f}'.format(float(top1) / all_valid_samples, float(top5) / all_valid_samples))
-    if args.reason_lm_task == 'alt':
+    if args.reason_lm_task == 'target_ranking':
         if len(datas) > 0:
-            save_lm_report_alt(datas, retrieved_statements, best_alternatives, output_f=output_f)
-        output_f.write(
-            '\n% Correct Alternative Prediction: {}\n'.format(float(alternative_prediction) / all_valid_samples))
-        print('\n% Correct Alternative Prediction: {}'.format(float(alternative_prediction) / all_valid_samples))
+            save_lm_report_target_ranking(datas, retrieved_statements, best_alternatives, output_f=output_f)
+        output_f.write(json.dumps({"scores": 
+                                   {"Target ranking accuracy": "{:.4f}".format(float(alternative_prediction) / all_valid_samples)}, 
+                                    "# examples": all_valid_samples}) + '\n')
+        print('\n% Target ranking accuracy: {}'.format(float(alternative_prediction) / all_valid_samples))
     output_f.close()
 
 
