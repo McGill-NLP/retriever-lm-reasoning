@@ -10,6 +10,7 @@ def arg_parser():
     parser.add_argument("--reason_device", type=str, default="cuda")
     parser.add_argument("--reason_k", type=int, default=5)
     parser.add_argument("--reason_data_file", type=str, required=True)
+    parser.add_argument("--reason_dataset", type=str, required=True)
     parser.add_argument("--reason_output_file", type=str, required=True)
     parser.add_argument("--reason_info", type=str, default="")
 

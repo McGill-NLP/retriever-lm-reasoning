@@ -30,6 +30,8 @@ def test_qa(args):
     models = load_models(args, device=device)
     tokenizer = models['tokenizer']
     qa_model = models['qa_model']
+    if args.reason_dataset == 'strategyqa':
+        args.reason_task = 'compare_qa'
     ret_lm = RetLM(args.reason_task, tokenizer=tokenizer, qa_model=qa_model, device=args.reason_device)
 
     output_f = open(args.reason_output_file, 'a+')
@@ -55,11 +57,18 @@ def test_qa(args):
         else:
             ValueError('{} is not a valid fact-type argument.'.format(args.reason_fact_type))
 
+        if args.reason_dataset == 'strategyqa':
+            options = target.copy()
+            options.sort()
+            options.reverse()
+            facts = [f + ' ' + ' / '.join(options) + ' .' for f in facts]
+
         if len(facts) < 1:
             continue
         candidates_info = {'text': facts}
         retrieve_k = min(len(facts), args.reason_k)
-        o = ret_lm.get_answer(query, candidates_info, retrieve_k)
+        if 'qa' in args.reason_task:
+            o = ret_lm.get_answer(query, target, candidates_info, retrieve_k)
         p, r, f = compute_f1_score(o['answer'], target[0])
         f_scores.append(f)
         p_scores.append(p)

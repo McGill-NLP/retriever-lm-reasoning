@@ -48,7 +48,7 @@ class CandidateScorer():
 
 class RetLM():
     def __init__(self, task, tokenizer=None, qa_model=None, query_embedder=None, encoder=None, device=None,
-                 lm_task=None):
+                 lm_task=None, dataset=None):
         self.task = task
         self.tokenizer = tokenizer
         self.qa_model = qa_model
@@ -57,6 +57,8 @@ class RetLM():
         self.device = device
         if task == 'qa':
             self.get_answer = self.do_qa
+        elif task == 'compare_qa':
+            self.get_answer = self.do_comparison_qa
         elif task == 'lm':
             self.lm_task = lm_task
             self.get_answer = self.do_lm
@@ -235,7 +237,7 @@ class RetLM():
         else:
             ValueError('Invalid lm method. Should be either alt or pred')
 
-    def do_qa(self, query, candidates_info, k):
+    def do_qa(self, query, _, candidates_info, k):
         self.qa_model.config.reader_beam_size = k
         self.qa_model.reader.reader_beam_size = k
         self.qa_model.config.searcher_beam_size = k
@@ -265,6 +267,44 @@ class RetLM():
             retrieveds = [candidates_texts[i] for i in retrieved_blocks_ids]
 
         return {'query': query, 'retrieved': retrieveds, 'answer': predicted_answer}
+    
+    def do_comparison_qa(self, query, options, candidates_info, k):
+        self.qa_model.config.reader_beam_size = k
+        self.qa_model.reader.reader_beam_size = k
+        self.qa_model.config.searcher_beam_size = k
+
+        if k == 0:
+            candidates_info['text'] = ['']
+            k = 1
+        query_ids = self.tokenizer(query, return_tensors="pt").to(self.device)
+
+        option_ids = []
+        for option in options:
+            option_ids.append(self.tokenizer([option], add_special_tokens=False, return_token_type_ids=False, return_attention_mask = False).input_ids)
+
+        candidates_texts = candidates_info['text']
+        scorer = CandidateScorer(self.qa_model.embedder)
+        candidates_inputs = self.tokenizer.batch_encode_candidates(candidates_texts, max_length=512, truncation=True,
+                                                                   padding=True, return_tensors="pt").to(self.device)
+        candidates_info['emb'] = scorer.embed(candidates_inputs)
+
+        # original  qa_model.block_emb 13353718 x 128
+        # new       qa_model.block_emb F x 128
+        self.qa_model.block_emb = candidates_info['emb']
+        self.qa_model.retriever.block_records = np.char.encode(np.array(candidates_info['text']))
+        options_loss = torch.zeros(len(options))
+        for option_i, option_id in enumerate(option_ids):
+            reader_output, predicted_answer_ids, pred_block, retrieved_blocks_ids = self.qa_model(**query_ids, 
+                                                                                                  answer_ids=option_id,
+                                                                                                  return_dict=False,
+                                                                                                  k=k)
+            options_loss[option_i] = reader_output.loss
+        if len(retrieved_blocks_ids.shape) == 0:
+            retrieveds = [candidates_texts[retrieved_blocks_ids]]
+        else:
+            retrieveds = [candidates_texts[i] for i in retrieved_blocks_ids]
+
+        return {'query': query, 'retrieved': retrieveds, 'answer': options[torch.argmin(options_loss)]}
 
 
 def load_models(args, device=None):
