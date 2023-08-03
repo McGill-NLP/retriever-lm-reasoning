@@ -106,6 +106,11 @@ def evaluate_qa(model, opt, step=None):
     save_every, total = 1000, 0
     datas, retrieved_statements, predicted_tokens_list = [], [], []
 
+    from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+    tokenizer = AutoTokenizer.from_pretrained("google/{}".format(opt.reason_flan))
+    flan = AutoModelForSeq2SeqLM.from_pretrained("google/{}".format(opt.reason_flan))
+    flan = flan.to(opt.reason_device)
+
     model.eval()
     index = DistributedIndex()
     unwrapped_model = util.get_unwrapped_model_if_wrapped(model)
@@ -114,7 +119,7 @@ def evaluate_qa(model, opt, step=None):
     task = get_task(opt, reader_tokenizer)
     data_iterator = _get_eval_data_iterator(opt, opt.reason_data_file, task)
     reason_task = 'compare_qa' if opt.reason_dataset == 'strategyqa' else 'qa'
-    ret_lm = RetAtlas(unwrapped_model, model, reader_tokenizer, task=task, index=index, reason_task=reason_task)
+    ret_lm = RetFlan(unwrapped_model, model, reader_tokenizer, flan, tokenizer, task=task, index=index, reason_task=reason_task)
 
     for i, batch in enumerate(data_iterator):
         is_valid, o = ret_lm.get_answer(batch, opt=opt)

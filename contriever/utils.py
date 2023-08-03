@@ -290,28 +290,19 @@ class RetFlan(RetLM):
         # retrieve
         retrieved_passages = self.retrieve_topk(query, query_enc, batch, batch_metadata=batch_metadata, opt=opt)
 
-        # If example is a padding example then skip step
-        if (len(query) == 0) or (len(query[0]) == 0):
-            return False, None
-
-        reader_tokens, _ = self.unwrapped_model.tokenize_passages(query, retrieved_passages)
-
-        generation = self.unwrapped_model.generate(
-            reader_tokens, query, choices=batch["choices"] if "choices" in batch else None
+        context_ids, context_mask = self.encode_example(query, retrieved_passages, qa_template="Answer the following question.\n{} {}")
+        outputs = self.flan.generate(
+            input_ids=context_ids.cuda(),
+            attention_mask=context_mask.cuda(),
+            max_length=50,
         )
-        g = generation[0]
 
-        if opt.decoder_prompt_format is not None:
-            query_ids = self.reader_tokenizer.encode(
-                opt.decoder_prompt_format.format_map({"query": query[0]}), add_special_tokens=False
-            )
-            g = g[len(query_ids) + 1:]
-        pred = self.reader_tokenizer.decode(g, skip_special_tokens=True)
-        gold = ' '.join(batch["answer"][0].split()[1:])
+        ans = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+        gold = batch["answer"][0]
 
         return True, {'query': query[0],
                       'retrieved': [p['text'] for p in retrieved_passages[0]],
-                      'gen_ans': pred,
+                      'gen_ans': ans,
                       'example': {'question': query[0], 'answer': [gold]}}
 
     def do_comparison_qa(self, batch, opt=None):
