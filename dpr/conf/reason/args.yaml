@@ -10,3 +10,6 @@ lm: "fid"
 
 # facts, golden_facts, single_fact
 fact_type: "facts"
+
+# strategyqa, entailmentbank
+dataset: ""

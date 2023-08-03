@@ -19,6 +19,12 @@ class RetLM():
             self.model.reset_score_storage()
         self.tokenizer = tokenizer
         self.dataset = dataset
+        if args.reason.task == 'qa':
+            self.get_answer = self.do_qa
+        elif args.reason.task == 'compare_qa':
+            self.get_answer = self.do_comparison_qa
+        elif args.reason.task == 'lm':
+            self.get_answer = self.do_lm
 
     @torch.no_grad()
     def do_lm(self, context_ids, context_mask, labels_, sample_id, args=None):
@@ -58,7 +64,7 @@ class RetLM():
                 'example': example
                 }
 
-    def do_qa(self, context_ids, context_mask, sample_id, args=None):
+    def do_qa(self, context_ids, _, context_mask, sample_id, args=None):
         if args.lm.write_crossattention_scores:
             self.model.reset_score_storage()
 
@@ -75,6 +81,26 @@ class RetLM():
         return {'query': example['question'],
                 'retrieved': [ctx['text'] for ctx in example['ctxs']],
                 'gen_ans': ans,
+                'example': example}
+    
+    def do_comparison_qa(self, context_ids, labels, context_mask, sample_id, args=None):
+        if args.lm.write_crossattention_scores:
+            self.model.reset_score_storage()
+
+        alt_num = labels.shape[0]
+        losses = torch.zeros(alt_num)
+        for alt_i in range(alt_num):
+            l = labels[alt_i].unsqueeze(0)
+            labels_output = self.model(input_ids=context_ids.cuda(),
+                                       attention_mask=context_mask.cuda(),
+                                       labels=l.cuda())
+            losses[alt_i] = labels_output[0]
+
+        predicted_alt = torch.argmin(losses)
+        example = self.dataset.data[sample_id[0]]
+        return {'query': example['question'],
+                'retrieved': [ctx['text'] for ctx in example['ctxs']],
+                'gen_ans': example['target'][predicted_alt],
                 'example': example}
 
 
@@ -142,12 +168,13 @@ class MyDataset(torch.utils.data.Dataset):
 
 
 class MyCollator(object):
-    def __init__(self, text_maxlength, tokenizer, answer_maxlength=20, lm='fid', flan_prompt='Find <extra_id_0>.\n'):
+    def __init__(self, text_maxlength, tokenizer, answer_maxlength=20, lm='fid', flan_prompt='Find <extra_id_0>.\n', task=''):
         self.tokenizer = tokenizer
         self.text_maxlength = text_maxlength
         self.answer_maxlength = answer_maxlength
         self.lm = lm
         self.flan_prompt = flan_prompt
+        self.task = task
 
     def __call__(self, batch):
         assert (batch[0]['target'] != None)
@@ -159,6 +186,9 @@ class MyCollator(object):
             target = []
             for ex in batch:
                 target += [t for t in ex['target']]
+        if self.task == 'lm':
+            target = [ex['question'].replace('<extra_id_0>', ' '.join(tgt[:-4].split()[1:])) for tgt in target]
+        
         if self.lm == 'flan':
             target = self.tokenizer.batch_encode_plus(
                 target,
@@ -178,7 +208,6 @@ class MyCollator(object):
         else:
             ValueError('Invalid lm requested.')
 
-        # print(target)
         target_ids = target["input_ids"]
         target_mask = target["attention_mask"].bool()
         target_ids = target_ids.masked_fill(~target_mask, -100)
