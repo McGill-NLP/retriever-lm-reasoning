@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 import os
 from itertools import repeat
+import json
 
 import numpy as np
 import torch
@@ -76,10 +77,12 @@ def evaluate_lm(model, opt, step=None):
         print('Writing up to the last sample report...')
         save_lm_report(datas, retrieved_statements, best_alternatives, predicted_tokens_list, output_f=output_f)
 
+    output_f.write(json.dumps({"scores": 
+                                   {"Target ranking accuracy": "{:.4f}".format(float(alternative_prediction_num) / total),
+                                    "Hits@1": "{:.4f}".format(float(first_token_prediction_num) / total)}, 
+                                    "# examples": total}) + '\n')
     print(f'\nHits@1: {(1.0 * first_token_prediction_num) / total:.4f}')
-    output_f.write(f'\nHits@1: {(1.0 * first_token_prediction_num) / total:.4f}')
     print(f'% Correct Alternative Prediction: {(1.0 * alternative_prediction_num) / total:.4f}')
-    output_f.write(f'\n% Correct Alternative Prediction: {(1.0 * alternative_prediction_num) / total:.4f}')
     output_f.close()
 
 
