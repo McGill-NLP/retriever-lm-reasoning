@@ -7,6 +7,7 @@
 from pathlib import Path
 
 import hydra
+import json
 import numpy as np
 import src.data
 import src.evaluation
@@ -35,7 +36,7 @@ def test_lm(ret_lm, dataloader, cfg, output_f=None, logger=None):
             # context_ids : 1xCx200. C: number of given contexts
             # labels_ : Tx20. true and alternative targets.
 
-            o = ret_lm.do_lm(context_ids, context_mask, labels_, idx, args=cfg)
+            o = ret_lm.get_answer(context_ids, context_mask, labels_, idx, args=cfg)
             predicted_alt = o['predicted_alt']
             example = o['example']
 
@@ -61,8 +62,10 @@ def test_lm(ret_lm, dataloader, cfg, output_f=None, logger=None):
     logger.info(f'Hits@1: {(1.0 * first_token_prediction_num) / total:.4f}, Total number of example {total}')
     logger.info(
         f'% Correct Alternative Prediction: {(1.0 * alternative_prediction_num) / total:.4f}, Total number of example {total}')
-    output_f.write(f'\nHits@1: {(1.0 * first_token_prediction_num) / total:.4f}')
-    output_f.write(f'\n% Correct Alternative Prediction: {(1.0 * alternative_prediction_num) / total:.4f}')
+    output_f.write(json.dumps({"scores": 
+                                   {"Target ranking accuracy": "{:.4f}".format(float(alternative_prediction_num) / total),
+                                    "Hits@1": "{:.4f}".format(float(first_token_prediction_num) / total)}, 
+                                    "# examples": total}) + '\n')
     output_f.close()
 
 
@@ -80,7 +83,7 @@ def test_qa(ret_lm, dataloader, cfg, output_f=None, logger=None):
             # context_ids : 1xCx200. C: number of given contexts
             # labels_ : Tx20. true and alternative targets.
 
-            o = ret_lm.do_qa(context_ids, context_mask, idx, args=cfg)
+            o = ret_lm.get_answer(context_ids, labels_, context_mask, idx, args=cfg)
             example = o['example']
             p, r, f1 = compute_f1_score(src.evaluation.normalize_answer(o['gen_ans']),
                                         src.evaluation.normalize_answer(example['target'][0]))
@@ -106,8 +109,13 @@ def test_qa(ret_lm, dataloader, cfg, output_f=None, logger=None):
 
     logger.info(
         f'F1 {np.mean(f_scores):.4f}, Precision {np.mean(p_scores):.4f}, Recall {np.mean(r_scores):.4f}, Total number of example {total}')
-    output_f.write(
-        f'\nF1 {np.mean(f_scores):.4f}, Precision {np.mean(p_scores):.4f}, Recall {np.mean(r_scores):.4f}, Total number of example {total}\n')
+    output_f.write(json.dumps({"scores": 
+                               {"F1": "{:.4f}".format(np.mean(f_scores)), 
+                                "Precision": "{:.4f}".format(np.mean(p_scores)), 
+                                "Recall": "{:.4f}".format(np.mean(r_scores))},
+                                "# examples": total}) + '\n')
+    # output_f.write(
+    #     f'\nF1 {np.mean(f_scores):.4f}, Precision {np.mean(p_scores):.4f}, Recall {np.mean(r_scores):.4f}, Total number of example {total}\n')
     output_f.close()
 
 
@@ -115,6 +123,8 @@ def test(cfg):
     lm = cfg.lm
     reason = cfg.reason
     dpr = cfg.dpr
+
+    assert reason.dataset in ['strategyqa', 'entailmentbank'], "You should specify a reason.dataset arg from ['strategyqa', 'entailmentbank']"
 
     doc_encoder, tensorizer, retriever = load_encoder_tensorizer(dpr)
     device = src.slurm.init_distributed_mode(lm)
@@ -166,13 +176,15 @@ def test(cfg):
     eval_dataloader, eval_dataset = load_dataloader(cfg, lm.eval_data, doc_encoder=doc_encoder, tensorizer=tensorizer,
                                                     retriever=retriever, q_prefix=q_prefix, ctx_prefix=ctx_prefix,
                                                     collate_fn=collator_function)
+    if reason.task == 'qa' and reason.dataset == 'strategyqa':
+        cfg.reason.task = 'compare_qa'
     ret_lm = RetLM(model, tokenizer, eval_dataset, args=cfg)
 
     logger.info("Start eval")
     if reason.task == 'lm':
         test_lm(ret_lm, eval_dataloader, cfg, output_f=output_f, logger=logger)
 
-    elif reason.task == 'qa':
+    elif 'qa' in reason.task:
         test_qa(ret_lm, eval_dataloader, cfg, output_f=output_f, logger=logger)
 
 
