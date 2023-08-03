@@ -1,4 +1,5 @@
 .pyc
+.log
 
 /logs/
 /data/
@@ -10,3 +11,6 @@ __pycache__/
 /dpr/DPR/dpr/downloads
 /dpr/pretrained_models
 /dpr/outputs
+
+/contriever/atlas_data/models/
+/contriever/atlas_data/experiments/reason/

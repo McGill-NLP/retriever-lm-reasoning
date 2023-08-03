@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 import os
 from itertools import repeat
+import json
 
 import numpy as np
 import torch
@@ -18,7 +19,7 @@ from src.tasks import get_task
 from src.index import DistributedIndex
 
 from misc_utils import add_my_args, normalize_answer, compute_f1_score, save_qa_report, save_lm_report
-from utils import RetLM
+from utils import RetAtlas
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
@@ -53,11 +54,11 @@ def evaluate_lm(model, opt, step=None):
 
     task = get_task(opt, reader_tokenizer)
 
-    ret_lm = RetLM(unwrapped_model, model, reader_tokenizer, task=task, index=index)
+    ret_lm = RetAtlas(unwrapped_model, model, reader_tokenizer, task=task, index=index, reason_task='lm')
     data_iterator = _get_eval_data_iterator(opt, opt.reason_data_file, task)
 
     for i, batch in enumerate(data_iterator):
-        o = ret_lm.do_lm(batch, opt=opt)
+        o = ret_lm.get_answer(batch, opt=opt)
         predicted_tokens_list += o['first_token_pred']
         best_alternatives += o['predicted_alt']
         retrieved_statements += o['retrieved']
@@ -76,10 +77,12 @@ def evaluate_lm(model, opt, step=None):
         print('Writing up to the last sample report...')
         save_lm_report(datas, retrieved_statements, best_alternatives, predicted_tokens_list, output_f=output_f)
 
+    output_f.write(json.dumps({"scores": 
+                                   {"Target ranking accuracy": "{:.4f}".format(float(alternative_prediction_num) / total),
+                                    "Hits@1": "{:.4f}".format(float(first_token_prediction_num) / total)}, 
+                                    "# examples": total}) + '\n')
     print(f'\nHits@1: {(1.0 * first_token_prediction_num) / total:.4f}')
-    output_f.write(f'\nHits@1: {(1.0 * first_token_prediction_num) / total:.4f}')
     print(f'% Correct Alternative Prediction: {(1.0 * alternative_prediction_num) / total:.4f}')
-    output_f.write(f'\n% Correct Alternative Prediction: {(1.0 * alternative_prediction_num) / total:.4f}')
     output_f.close()
 
 
@@ -99,10 +102,11 @@ def evaluate_qa(model, opt, step=None):
 
     task = get_task(opt, reader_tokenizer)
     data_iterator = _get_eval_data_iterator(opt, opt.reason_data_file, task)
-    ret_lm = RetLM(unwrapped_model, model, reader_tokenizer, task=task, index=index)
+    reason_task = 'compare_qa' if opt.reason_dataset == 'strategyqa' else 'qa'
+    ret_lm = RetAtlas(unwrapped_model, model, reader_tokenizer, task=task, index=index, reason_task=reason_task)
 
     for i, batch in enumerate(data_iterator):
-        is_valid, o = ret_lm.do_qa(batch, opt=opt)
+        is_valid, o = ret_lm.get_answer(batch, opt=opt)
         if not is_valid:
             continue
         gold = o['example']['answer']
@@ -127,10 +131,11 @@ def evaluate_qa(model, opt, step=None):
 
     print(f'F1 {np.mean(f_scores):.4f}, Precision {np.mean(p_scores):.4f}, Recall {np.mean(r_scores):.4f}, '
           f'Total number of example {total}')
-    output_f.write(
-        f'F1 {np.mean(f_scores):.4f}, Precision {np.mean(p_scores):.4f}, Recall {np.mean(r_scores):.4f}, '
-        f'Total number of example {total}\n'
-    )
+    output_f.write(json.dumps({"scores": 
+                               {"F1": "{:.4f}".format(np.mean(f_scores)), 
+                                "Precision": "{:.4f}".format(np.mean(p_scores)), 
+                                "Recall": "{:.4f}".format(np.mean(r_scores))},
+                                "# examples": total}) + '\n')
     output_f.close()
 
 
@@ -172,7 +177,3 @@ if __name__ == "__main__":
         evaluate_lm(model, opt, step)
     else:
         ValueError('Invalid task and my_qa params.')
-
-# port=$(shuf -i 15000-16000 -n 1)
-# python my_eval_lm.py --generation_max_length 16 --gold_score_mode "pdist" --name test --precision fp32 --reader_model_type google/t5-base-lm-adapt --text_maxlength 512 --model_path atlas_data/models/atlas_nq/base --per_gpu_batch_size 1 --n_context 40 --checkpoint_dir atlas_data/experiments --main_port $port --my-qa 1 --my-dataset entailmentbank --my-task 1 --my-part dev --my-k 3
-# python evaluate_reasoning.py --generation_max_length 16 --name reason --precision fp32 --reader_model_type google/t5-base-lm-adapt --text_maxlength 512 --model_path atlas_data/models/atlas_nq/base --per_gpu_batch_size 1 --checkpoint_dir atlas_data/experiments --main_port $port --reason_task lm --reason_data_file /network/scratch/p/parishad.behnamghader/retriever_lm_reasoning/data/lm/entailmentbank_1_dev.json --reason_output_file /network/scratch/p/parishad.behnamghader/retriever_lm_reasoning/logs/lm/atlas.txt --reason_fact_type facts
