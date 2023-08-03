@@ -171,7 +171,7 @@ def test(cfg):
         flan_prompt = 'Answer the following question.\n'
     elif reason.task == 'lm':
         flan_prompt = 'Find <extra_id_0>.\n'
-    collator_function = MyCollator(lm.text_maxlength, tokenizer, lm=reason.lm, flan_prompt=flan_prompt)
+    collator_function = MyCollator(lm.text_maxlength, tokenizer, lm=reason.lm, flan_prompt=flan_prompt, task=reason.task)
 
     eval_dataloader, eval_dataset = load_dataloader(cfg, lm.eval_data, doc_encoder=doc_encoder, tensorizer=tensorizer,
                                                     retriever=retriever, q_prefix=q_prefix, ctx_prefix=ctx_prefix,

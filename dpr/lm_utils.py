@@ -168,12 +168,13 @@ class MyDataset(torch.utils.data.Dataset):
 
 
 class MyCollator(object):
-    def __init__(self, text_maxlength, tokenizer, answer_maxlength=20, lm='fid', flan_prompt='Find <extra_id_0>.\n'):
+    def __init__(self, text_maxlength, tokenizer, answer_maxlength=20, lm='fid', flan_prompt='Find <extra_id_0>.\n', task=''):
         self.tokenizer = tokenizer
         self.text_maxlength = text_maxlength
         self.answer_maxlength = answer_maxlength
         self.lm = lm
         self.flan_prompt = flan_prompt
+        self.task = task
 
     def __call__(self, batch):
         assert (batch[0]['target'] != None)
@@ -185,6 +186,9 @@ class MyCollator(object):
             target = []
             for ex in batch:
                 target += [t for t in ex['target']]
+        if self.task == 'lm':
+            target = [ex['question'].replace('<extra_id_0>', ' '.join(tgt[:-4].split()[1:])) for tgt in target]
+        
         if self.lm == 'flan':
             target = self.tokenizer.batch_encode_plus(
                 target,
@@ -204,7 +208,6 @@ class MyCollator(object):
         else:
             ValueError('Invalid lm requested.')
 
-        # print(target)
         target_ids = target["input_ids"]
         target_mask = target["attention_mask"].bool()
         target_ids = target_ids.masked_fill(~target_mask, -100)
