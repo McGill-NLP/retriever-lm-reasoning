@@ -68,8 +68,8 @@ class Reason_KNN_Dstore(object):
             seen_vals_indices = torch.tensor(list(seen_vals.values()))
 
             topk_probs = torch.log(probs[seen_vals_indices])
-            topk_indices = topk_indices[seen_vals_indices]
             topk_retrieved_tokens = [np.append(src_vals[ret_i], target_vals[ret_i]) for ret_i in topk_indices]
+            topk_indices = topk_indices[seen_vals_indices]
             topk_retrieved_tokens_all.append(topk_retrieved_tokens)
 
             knn_probs[q_id, torch.tensor(target_vals[topk_indices], dtype=torch.int64).view(-1).cuda()] = topk_probs
