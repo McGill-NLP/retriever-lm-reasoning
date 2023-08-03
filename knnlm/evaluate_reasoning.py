@@ -8,7 +8,7 @@ import torch
 from fairseq import checkpoint_utils, options, tasks, utils
 from fairseq.data.dictionary import Dictionary
 
-from misc_utils import add_reason_args, get_hits_at_k, compute_f1_score, save_lm_report, save_qa_report, clean_str
+from misc_utils import add_reason_args, get_hits_at_k, compute_f1_score, save_lm_report, save_qa_report, clean_str, normalize_answer
 from utils import RetLM, Reason_KNN_Dstore
 
 logging.basicConfig(
@@ -235,7 +235,7 @@ def test_qa(parsed_args):
         facts_info = ret_lm.get_fact_keys_vals(facts, args=args)
         o = ret_lm.get_answer(query, answer, sample_id, args=args, knn_dstore=knn_dstore, facts_info=facts_info)
 
-        p, r, f = compute_f1_score(o['answer'], answer[0], d)
+        p, r, f = compute_f1_score(normalize_answer(o['answer']), normalize_answer(answer[0]), d)
         f_scores.append(f)
         p_scores.append(p)
         r_scores.append(r)

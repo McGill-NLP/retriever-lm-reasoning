@@ -54,15 +54,6 @@ def compute_f1_score(prediction, truth):
 
 
 def save_lm_report(datas, retrieved_statements, best_alternatives, predicted_tokens_list, output_f=None):
-    # for i, d in enumerate(datas):
-    #     output_f.write('Query: {}\n'.format(d['query']))
-    #     output_f.write('Retrieved: {}\n'.format(' | '.join(retrieved_statements[i])))
-    #     output_f.write('Generated: {}\n'.format(predicted_tokens_list[i]))
-    #     output_f.write('Alternatives: {}\n'.format(d['target']))
-    #     output_f.write(
-    #         '{} Preferred: {}\n'.format('+' if best_alternatives[i] == 0 else '-', d['target'][best_alternatives[i]]))
-
-    #     output_f.write('\n')
     for i, d in enumerate(datas):
         o = {}
         o['query'] = d['query']
@@ -76,13 +67,6 @@ def save_lm_report(datas, retrieved_statements, best_alternatives, predicted_tok
 
 
 def save_qa_report(datas, retrieved_statements, predicted_ans_list, output_f=None):
-    # for i, data in enumerate(datas):
-    #     output_f.write('Query: {}\n'.format(data['question']))
-    #     output_f.write('Retrieved: {}\n'.format(' | '.join(retrieved_statements[i])))
-    #     output_f.write('Expected: {}\n'.format(data['answer'][0]))
-    #     output_f.write('Generated: {}\n'.format(predicted_ans_list[i]))
-
-    #     output_f.write('\n')
     for i, data in enumerate(datas):
         o = {}
         o['query'] = data['question']

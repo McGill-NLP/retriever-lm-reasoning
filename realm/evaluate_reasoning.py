@@ -6,7 +6,7 @@ import torch
 import transformers
 
 from misc_utils import arg_parser, compute_f1_score, get_hits_at_k, \
-    save_lm_report_target_ranking, save_lm_report_prediction, save_qa_report
+    save_lm_report_target_ranking, save_lm_report_prediction, save_qa_report, normalize_answer
 from utils import RetLM, load_models
 
 
@@ -69,7 +69,7 @@ def test_qa(args):
         retrieve_k = min(len(facts), args.reason_k)
         if 'qa' in args.reason_task:
             o = ret_lm.get_answer(query, target, candidates_info, retrieve_k)
-        p, r, f = compute_f1_score(o['answer'], target[0])
+        p, r, f = compute_f1_score(normalize_answer(o['answer']), normalize_answer(target[0]))
         f_scores.append(f)
         p_scores.append(p)
         r_scores.append(r)
