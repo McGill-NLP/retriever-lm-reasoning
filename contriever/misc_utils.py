@@ -1,14 +1,17 @@
+import json
+
+
 def add_my_args(options):
     group = options.parser
     group.add_argument("--reason_device", type=str, default="cuda")
-
     group.add_argument("--reason_output_file", type=str)
     group.add_argument("--reason_data_file", type=str)
     group.add_argument("--reason_info", type=str, default="")
     group.add_argument("--reason_fact_type", type=str, default='facts')  # facts, gold_facts, single_fact
     group.add_argument("--reason_k", type=int, default=5)
     group.add_argument("--reason_task", type=str, default='lm')
-    group.add_argument("--reason_lm", type=str, default='atlas')
+    group.add_argument("--reason_dataset", type=str, required=True)  # strategyqa, entailmentbank
+
     return group
 
 
@@ -51,22 +54,40 @@ def compute_f1_score(prediction, truth):
 
 
 def save_lm_report(datas, retrieved_statements, best_alternatives, predicted_tokens_list, output_f=None):
-    for i, d in enumerate(datas):
-        output_f.write('Query: {}\n'.format(d['query']))
-        output_f.write('Retrieved: {}\n'.format(' | '.join(retrieved_statements[i])))
-        output_f.write('Generated: {}\n'.format(predicted_tokens_list[i]))
-        output_f.write('Alternatives: {}\n'.format(d['target']))
-        output_f.write(
-            '{} Preferred: {}\n'.format('+' if best_alternatives[i] == 0 else '-', d['target'][best_alternatives[i]]))
+    # for i, d in enumerate(datas):
+    #     output_f.write('Query: {}\n'.format(d['query']))
+    #     output_f.write('Retrieved: {}\n'.format(' | '.join(retrieved_statements[i])))
+    #     output_f.write('Generated: {}\n'.format(predicted_tokens_list[i]))
+    #     output_f.write('Alternatives: {}\n'.format(d['target']))
+    #     output_f.write(
+    #         '{} Preferred: {}\n'.format('+' if best_alternatives[i] == 0 else '-', d['target'][best_alternatives[i]]))
 
-        output_f.write('\n')
+    #     output_f.write('\n')
+    for i, d in enumerate(datas):
+        o = {}
+        o['query'] = d['query']
+        o['retrieved_statements'] = retrieved_statements[i]
+        o['alternatives'] = d['target']
+        o['ranked_target'] = d['target'][best_alternatives[i]]
+        o['ranked_correctly'] = True if best_alternatives[i] == 0 else False
+        o['predicted'] = predicted_tokens_list[i]
+
+        output_f.write(json.dumps(o) + '\n')
 
 
 def save_qa_report(datas, retrieved_statements, predicted_ans_list, output_f=None):
-    for i, data in enumerate(datas):
-        output_f.write('Query: {}\n'.format(data['question']))
-        output_f.write('Retrieved: {}\n'.format(' | '.join(retrieved_statements[i])))
-        output_f.write('Expected: {}\n'.format(data['answer'][0]))
-        output_f.write('Generated: {}\n'.format(predicted_ans_list[i]))
+    # for i, data in enumerate(datas):
+    #     output_f.write('Query: {}\n'.format(data['question']))
+    #     output_f.write('Retrieved: {}\n'.format(' | '.join(retrieved_statements[i])))
+    #     output_f.write('Expected: {}\n'.format(data['answer'][0]))
+    #     output_f.write('Generated: {}\n'.format(predicted_ans_list[i]))
 
-        output_f.write('\n')
+    #     output_f.write('\n')
+    for i, data in enumerate(datas):
+        o = {}
+        o['query'] = data['question']
+        o['retrieved_statements'] = retrieved_statements[i]
+        o['answer'] = data['answer'][0]
+        o['response'] = predicted_ans_list[i]
+
+        output_f.write(json.dumps(o) + '\n')
