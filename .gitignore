@@ -1,0 +1,8 @@
+.pyc
+
+/logs/
+/data/
+__pycache__/
+
+/knnlm/checkpoints/
+/knnlm/data-bin/
