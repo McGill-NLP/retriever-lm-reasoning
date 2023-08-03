@@ -13,3 +13,4 @@ __pycache__/
 /dpr/outputs
 
 /contriever/atlas_data/models/
+/contriever/atlas_data/experiments/reason/
