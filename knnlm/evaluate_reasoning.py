@@ -78,7 +78,7 @@ def test_lm(parsed_args):
     if args.knnlm:
         knn_dstore = Reason_KNN_Dstore(args)
 
-    ret_lm = RetLM(models, d, cuda=use_cuda)
+    ret_lm = RetLM(models, d, cuda=use_cuda, task=args.reason_task)
 
     logger.info('Start inference')
     hitsk = [1, 5]
@@ -102,7 +102,7 @@ def test_lm(parsed_args):
             continue
 
         facts_info = ret_lm.get_fact_keys_vals(facts, args=args)
-        o = ret_lm.do_lm(query, sample_id, target_tokens, args=args, knn_dstore=knn_dstore, facts_info=facts_info)
+        o = ret_lm.get_answer(query, sample_id, target_tokens, args=args, knn_dstore=knn_dstore, facts_info=facts_info)
 
         logits = o['logits']
         targets = o['target']
@@ -195,7 +195,9 @@ def test_qa(parsed_args):
     knn_dstore = None
     if args.knnlm:
         knn_dstore = Reason_KNN_Dstore(args)
-    ret_lm = RetLM(models, d, cuda=use_cuda)
+    if args.reason_dataset == 'strategyqa':
+        args.reason_task = 'compare_qa'
+    ret_lm = RetLM(models, d, cuda=use_cuda, task=args.reason_task)
     # print('param#', sum(p.numel() for p in models[0].parameters()))
 
     logger.info('Start inference')
@@ -218,11 +220,19 @@ def test_qa(parsed_args):
             facts = clean_str([data['hypothesis']])
         else:
             ValueError('{} is not a valid fact-type argument.'.format(args.reason_fact_type))
+
+        if args.reason_dataset == 'strategyqa':
+            options = answer.copy()
+            options.sort()
+            options.reverse()
+            facts = [f + ' ' + ' / '.join(options) + ' .' for f in facts]
+            query += ' [MASK]'
+        
         if len(facts) < 1:
             continue
 
         facts_info = ret_lm.get_fact_keys_vals(facts, args=args)
-        o = ret_lm.do_qa(query, sample_id, args=args, knn_dstore=knn_dstore, facts_info=facts_info)
+        o = ret_lm.get_answer(query, answer, sample_id, args=args, knn_dstore=knn_dstore, facts_info=facts_info)
 
         p, r, f = compute_f1_score(o['answer'], answer[0], d)
         f_scores.append(f)
