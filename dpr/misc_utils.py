@@ -1,5 +1,6 @@
 import json
 
+
 def save_lm_report(datas, retrieved_statements, predicted_alt, predicted_tokens_list, output_f=None):   
     for i, d in enumerate(datas):
         o = {}

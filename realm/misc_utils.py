@@ -74,8 +74,8 @@ def normalize_answer(s):
 
 
 def compute_f1_score(prediction, truth):
-    pred_tokens = normalize_answer(prediction).split()
-    truth_tokens = normalize_answer(truth).split()
+    pred_tokens = prediction.split()
+    truth_tokens = truth.split()
 
     if len(pred_tokens) == 0 or len(truth_tokens) == 0:
         return int(pred_tokens == truth_tokens), int(pred_tokens == truth_tokens), int(pred_tokens == truth_tokens)
