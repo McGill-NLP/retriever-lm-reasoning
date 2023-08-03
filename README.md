@@ -130,6 +130,7 @@ python evaluate_reasoning.py data-bin/wikitext-103 \
   --reason_data_file <absolute address of the preprocessed json data file> \
   --reason_output_file <absolute address of a report.txt file> \
   --reason_task qa
+  --reason_dataset <entailmentbank / strategyqa>
   
 #LM
 python evaluate_reasoning.py data-bin/wikitext-103 \
@@ -140,6 +141,7 @@ python evaluate_reasoning.py data-bin/wikitext-103 \
   --reason_data_file <absolute address of the preprocessed json data file> \
   --reason_output_file <absolute address of a report.txt file> \
   --reason_task lm
+  --reason_dataset <entailmentbank / strategyqa>
 ```
 
 A list of the script arguments is explained below:
@@ -148,6 +150,7 @@ A list of the script arguments is explained below:
 - `reason_output_file`: absolute address of a report.txt file
 - `reason_task`: 'qa' | 'lm'
 - `reason_fact_type`: 'facts' (default, use `facts` key) | 'gold_facts' (use `gold_facts` key) | 'single_fact' (use `hypothesis` key)
+- `reason_dataset`: 'entailmentbank' | 'strategyqa'
 </p></details>
 
 <details><summary>3. DPR + FiD</summary>
