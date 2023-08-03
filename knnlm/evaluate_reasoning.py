@@ -135,13 +135,14 @@ def test_lm(parsed_args):
         save_lm_report(datas, retrieved_statements, best_alternatives, predicted_tokens_list, output_f=output_f,
                        dic=d)
     top1, top5 = top[1], top[5]
-    output_f.write('\nHits@1: {:.4f}, Hits@5: {:.4f}'.format(float(top1) / all_valid_samples,
-                                                             float(top5) / all_valid_samples))
     print('\nHits@1: {:.4f}, Hits@5: {:.4f}'.format(float(top1) / all_valid_samples,
                                                     float(top5) / all_valid_samples))
-    output_f.write('\n% Correct Alternative Prediction: {}\n'.format(float(alternative_prediction) / all_valid_samples))
-    print('% Correct Alternative Prediction: {}'.format(float(alternative_prediction) / all_valid_samples))
-
+    print('% Target ranking accuracy: {}'.format(float(alternative_prediction) / all_valid_samples))
+    output_f.write(json.dumps({"scores": 
+                                   {"Target ranking accuracy": "{:.4f}".format(float(alternative_prediction) / all_valid_samples),
+                                    "Hits@1": "{:.4f}".format(float(top1) / all_valid_samples), 
+                                    "Hits@5": "{:.4f}".format(float(top5) / all_valid_samples)}, 
+                                    "# examples": all_valid_samples}) + '\n')
     output_f.close()
 
 
@@ -257,12 +258,11 @@ def test_qa(parsed_args):
                                                                                           np.mean(p_scores),
                                                                                           np.mean(r_scores),
                                                                                           all_valid_samples))
-    output_f.write(
-        '\nF1 {:.4f}, Precision {:.4f}, Recall {:.4f}, Total number of example {}\n'.format(np.mean(f_scores),
-                                                                                            np.mean(p_scores),
-                                                                                            np.mean(r_scores),
-                                                                                            all_valid_samples))
-
+    output_f.write(json.dumps({"scores": 
+                               {"F1": "{:.4f}".format(np.mean(f_scores)), 
+                                "Precision": "{:.4f}".format(np.mean(p_scores)), 
+                                "Recall": "{:.4f}".format(np.mean(r_scores))},
+                                "# examples": all_valid_samples}) + '\n')
     output_f.close()
 
 
