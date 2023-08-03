@@ -1,4 +1,5 @@
 import torch
+from misc_utils import normalize_answer
 
 
 class RetLM():
@@ -141,7 +142,7 @@ class RetAtlas(RetLM):
             )
             g = g[len(query_ids) + 1:]
         pred = self.reader_tokenizer.decode(g, skip_special_tokens=True)
-        gold = batch["answer"][0]
+        gold = ' '.join(batch["answer"][0].split()[1:])
 
         return True, {'query': query[0],
                       'retrieved': [p['text'] for p in retrieved_passages[0]],
@@ -152,10 +153,9 @@ class RetAtlas(RetLM):
         if len(batch["passages"][0]) < 1:
             return False, None
         query = batch.get("query", [""])
-        answers = batch.get("answer", [""])
+        answers = batch.get("answer", [[""]])
         batch_metadata = batch.get("metadata")
         target_tokens = batch.get("target_tokens")
-        print(query, answers)
 
         retrieved_passages = None
         alt_num = len(answers[0])
@@ -166,19 +166,13 @@ class RetAtlas(RetLM):
             query_enc, labels, decoder_input_ids = self.unwrapped_model.tokenize(query, [answers[0][alt_i]],
                                                                                  target_tokens=target_tokens)
             if not retrieved_passages:
-                retrieved_passages = self.retrieve_topk(query, query_enc, batch, index=self.index, model=self.model,
-                                                        batch_metadata=batch_metadata,
-                                                        unwrapped_model=self.unwrapped_model,
-                                                        opt=opt, task=self.task)
-                print(len(retrieved_passages[0]))
+                retrieved_passages = self.retrieve_topk(query, query_enc, batch, batch_metadata=batch_metadata, opt=opt)
             reader_tokens, _ = self.unwrapped_model.tokenize_passages(query, retrieved_passages)
-            print(sum(reader_tokens['attention_mask'][0][0]))
 
             loss, _ = self.unwrapped_model.compute_reader_loss_and_logits(reader_tokens, decoder_input_ids, labels)
             target_losses[alt_i] = loss
         predicted_alt = torch.argmin(target_losses)
         return True, {'query': query[0],
                       'retrieved': [p['text'] for p in retrieved_passages[0]],
-                      'gen_ans': answers[0][predicted_alt],
-                      'example': {'question': query[0], 'answer': [answers[0][0]]}}
-
+                      'gen_ans': ' '.join(answers[0][predicted_alt].split()[1:]),
+                      'example': {'question': query[0], 'answer': [' '.join(answers[0][0].split()[1:])]}}

@@ -23,7 +23,10 @@ class Task(BaseTask):
 
     def process(self, example, fact_type=None, *args, **kwargs):
         if "answer" in example:
-            target = example["answer"][0]
+            if isinstance(example["answer"], list) and len(example["answer"]) == 1:
+                target = example["answer"][0]
+            else:
+                target = example["answer"]
         elif "answers" in example:
             target = random.choice(example["answers"])
         else:
@@ -40,7 +43,11 @@ class Task(BaseTask):
         example["metadata"] = example.get("metadata", {})
         example["query"] = self.get_qa_prompt(example["question"])
         if target is not None:
-            example["answer"] = f"<extra_id_0> {target}"
+            if isinstance(target, str):
+                example["answer"] = f"<extra_id_0> {target}"
+            elif isinstance(target, list):
+                example["answer"] = [f"<extra_id_0> {t}" for t in target]
+
 
         return example
 
