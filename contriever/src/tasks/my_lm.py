@@ -16,9 +16,12 @@ class Task(BaseTask):
 
     def __init__(self, opt: Options, *args, **kwargs):
         super().__init__()
+        self.lm_answer_prefix = opt.lm_answer_prefix  
+        self.lm_question_mask_token = opt.lm_question_mask_token  
 
     def get_q_prompt(self, question: str) -> str:
-        return question.replace('[MASK]', '<extra_id_0>')
+        return question.replace('[MASK]', self.lm_question_mask_token)
+        # return question.replace('[MASK]', '<extra_id_0>')
 
     def process(self, example, fact_type=None, *args, **kwargs):
         if "target" in example:
@@ -38,9 +41,9 @@ class Task(BaseTask):
         example["query"] = self.get_q_prompt(example["query"])
         if target is not None:
             if isinstance(target, str):
-                example["answer"] = f"<extra_id_0> {target}"
+                example["answer"] = f"{self.lm_answer_prefix}{target}"
             elif isinstance(target, list):
-                example["answer"] = [f"<extra_id_0> {t}" for t in target]
+                example["answer"] = [f"{self.lm_answer_prefix}{t}" for t in target]
 
         return example
 

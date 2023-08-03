@@ -17,6 +17,7 @@ class Task(BaseTask):
     def __init__(self, opt: Options, *args, **kwargs):
         super().__init__()
         self.qa_prompt_format_str = opt.qa_prompt_format
+        self.qa_answer_format_str = opt.qa_answer_format
 
     def get_qa_prompt(self, question: str) -> str:
         return self.qa_prompt_format_str.format(question=question)
@@ -44,9 +45,9 @@ class Task(BaseTask):
         example["query"] = self.get_qa_prompt(example["question"])
         if target is not None:
             if isinstance(target, str):
-                example["answer"] = f"<extra_id_0> {target}"
+                example["answer"] = self.qa_answer_format_str.format(target=target)
             elif isinstance(target, list):
-                example["answer"] = [f"<extra_id_0> {t}" for t in target]
+                example["answer"] = [self.qa_answer_format_str.format(target=t) for t in target]
 
 
         return example

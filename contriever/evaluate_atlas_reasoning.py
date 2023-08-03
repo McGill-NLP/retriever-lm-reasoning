@@ -43,6 +43,9 @@ def evaluate_lm(model, opt, step=None):
     output_f = open(opt.reason_output_file, 'a+')
     print('output_file_name', opt.reason_output_file)
 
+    opt.lm_question_mask_token = '<extra_id_0>'
+    opt.lm_answer_prefix = '<extra_id_0> '
+
     alternative_prediction_num, first_token_prediction_num = 0, 0
     best_alternatives, retrieved_statements, predicted_tokens_list, datas = [], [], [], []
     save_every, total = 1000, 0
@@ -90,6 +93,9 @@ def evaluate_lm(model, opt, step=None):
 def evaluate_qa(model, opt, step=None):
     output_f = open(opt.reason_output_file, 'a+')
     print('output_file_name', opt.reason_output_file)
+
+    opt.qa_prompt_format = 'question: {question} answer: <extra_id_0>'
+    opt.qa_answer_format = '<extra_id_0> {target}'
 
     p_scores, r_scores, f_scores = [], [], []
     save_every, total = 1000, 0
