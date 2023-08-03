@@ -233,7 +233,8 @@ python evaluate_reasoning.py \
   --reason_data_file <absolute address of the preprocessed json data file> \
   --reason_output_file <absolute address of a report.txt file> \
   --reason_k 5 \
-  --reason_task qa
+  --reason_task qa \
+  --reason_dataset <entailmentbank / strategyqa>
   
 #LM
 python evaluate_reasoning.py \
@@ -244,7 +245,8 @@ python evaluate_reasoning.py \
   --reason_data_file <absolute address of the preprocessed json data file> \
   --reason_output_file <absolute address of a report.txt file> \
   --reason_k 5 \
-  --reason_task lm
+  --reason_task lm \
+  --reason_dataset <entailmentbank / strategyqa>
 ```
 
 A list of the script arguments is explained below:
@@ -253,6 +255,7 @@ A list of the script arguments is explained below:
 - `reason_output_file`: absolute address of a report.txt file
 - `reason_task`: 'qa' | 'lm'
 - `reason_fact_type`: 'facts' (default, use `facts` key) | 'gold_facts' (use `gold_facts` key) | 'single_fact' (use `hypothesis` key)
+- `reason_dataset`: 'strategyqa' | 'entailmentbank'
 </p></details>
 
 <details><summary>5. DPR + Flan-T5</summary>
