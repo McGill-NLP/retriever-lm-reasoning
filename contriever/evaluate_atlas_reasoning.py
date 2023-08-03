@@ -131,10 +131,11 @@ def evaluate_qa(model, opt, step=None):
 
     print(f'F1 {np.mean(f_scores):.4f}, Precision {np.mean(p_scores):.4f}, Recall {np.mean(r_scores):.4f}, '
           f'Total number of example {total}')
-    output_f.write(
-        f'F1 {np.mean(f_scores):.4f}, Precision {np.mean(p_scores):.4f}, Recall {np.mean(r_scores):.4f}, '
-        f'Total number of example {total}\n'
-    )
+    output_f.write(json.dumps({"scores": 
+                               {"F1": "{:.4f}".format(np.mean(f_scores)), 
+                                "Precision": "{:.4f}".format(np.mean(p_scores)), 
+                                "Recall": "{:.4f}".format(np.mean(r_scores))},
+                                "# examples": total}) + '\n')
     output_f.close()
 
 
