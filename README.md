@@ -82,16 +82,16 @@ cd realm
 python evaluate_reasoning.py \
   --reason_data_file <absolute address of the preprocessed json data file> \
   --reason_output_file <absolute address of a report.jsonl file> \
-  --reason_task qa
-  --reason_k 5
+  --reason_task qa \
+  --reason_k 5 \
   --reason_dataset <entailmentbank / strategyqa>
   
 #LM (target ranking)
 python evaluate_reasoning.py \
   --reason_data_file <absolute address of the preprocessed json data file> \
   --reason_output_file <absolute address of a report.jsonl file> \
-  --reason_task lm
-  --reason_k 5
+  --reason_task lm \
+  --reason_k 5 \
   --reason_dataset <entailmentbank / strategyqa>
 ```
 
@@ -129,7 +129,7 @@ python evaluate_reasoning.py data-bin/wikitext-103 \
   --knnlm --k 5 --lmbda 0.65 \
   --reason_data_file <absolute address of the preprocessed json data file> \
   --reason_output_file <absolute address of a report.txt file> \
-  --reason_task qa
+  --reason_task qa \
   --reason_dataset <entailmentbank / strategyqa>
   
 #LM
@@ -140,7 +140,7 @@ python evaluate_reasoning.py data-bin/wikitext-103 \
   --knnlm --k 5 --lmbda 0.65 \
   --reason_data_file <absolute address of the preprocessed json data file> \
   --reason_output_file <absolute address of a report.txt file> \
-  --reason_task lm
+  --reason_task lm \
   --reason_dataset <entailmentbank / strategyqa>
 ```
 
@@ -166,9 +166,9 @@ A list of the script arguments is explained below:
 You may want to use `dpr/fid_environment.yml` as well.
 
 ##### Experiments
-In order to run the flan-t5 experiments, you must first prepare the [DPR retriever](https://github.com/facebookresearch/DPR). In these experiments, we load the `nq_retriever` checkpoints. 
+In order to run the fid experiments, you must first prepare the [DPR retriever](https://github.com/facebookresearch/DPR). In these experiments, we load the `nq_retriever` checkpoints. 
 Also, we use the `nq_reader_base` checkpoint for the FiD model available in [the model's github repository](https://github.com/facebookresearch/FiD).
-The following scripts run all kinds of experiments. `dpr` arguments refer to the retriever's arguments, 'lm' arguments refer to the model's arguments, and `reason` arguments refer to the specific arguments for our experiments. 
+The following scripts run all kinds of experiments. `dpr` arguments refer to the retriever's arguments, `lm` arguments refer to the model's arguments, and `reason` arguments refer to the specific arguments for our experiments. 
 ```bash
 cd dpr
 
@@ -180,8 +180,9 @@ python evaluate_reasoning.py \
   reason.data_file=<absolute address of the preprocessed json data file> \
   reason.output_file=<absolute address of a report.txt file> \
   reason.k=5 \
-  reason.lm=fid \
-  reason.task=qa
+  reason.task=qa \
+  reason.dataset=<entailmentbank / strategyqa>
+
   
 #LM
 python evaluate_reasoning.py \
@@ -191,8 +192,8 @@ python evaluate_reasoning.py \
   reason.data_file=<absolute address of the preprocessed json data file> \
   reason.output_file=<absolute address of a report.txt file> \
   reason.k=5 \
-  reason.lm=fid \
-  reason.task=lm
+  reason.task=lm \
+  reason.dataset=<entailmentbank / strategyqa>
 ```
 
 A list of the script arguments is explained below:
@@ -201,7 +202,7 @@ A list of the script arguments is explained below:
 - `output_file`: absolute address of a report.txt file
 - `task`: 'qa' | 'lm'
 - `fact_type`: 'facts' (default, use `facts` key) | 'gold_facts' (use `gold_facts` key) | 'single_fact' (use `hypothesis` key)
-- `lm`: 'fid' ('flan' and 'fid' models use the same base code in our experiments.)
+- `dataset`: 'strategyqa' | 'entailmentbank'
 </p></details>
 
 <details><summary>4. Contriever + ATLAS</summary>
