@@ -1,4 +1,5 @@
 import torch
+import json
 
 
 def add_reason_args(parser):
@@ -10,6 +11,7 @@ def add_reason_args(parser):
     group.add_argument("--reason_info", type=str, default="")
     group.add_argument("--reason_task", type=str, default="lm")  # lm, qa
     group.add_argument("--reason_fact_type", type=str, default='facts')  # facts, gold_facts, single_fact
+    group.add_argument("--reason_dataset", type=str, required=True)  # entailmentbank, strategyqa
     return group
 
 
@@ -69,26 +71,44 @@ def compute_f1_score(prediction, truth, d):
 
 
 def save_lm_report(datas, retrieved_statements, predicted_alt, predicted_tokens_list, output_f=None, dic=None):
-    for i, data in enumerate(datas):
-        output_f.write('Query: {}\n'.format(data['query']))
-        output_f.write('Retrieved: {}\n'.format(' | '.join(retrieved_statements[i])))
-        gen = dic[predicted_tokens_list[i][0]] if dic else predicted_tokens_list[i][0]
-        output_f.write('Generated: {}\n'.format(gen))
-        output_f.write('Alternatives: {}\n'.format(data['target']))
-        output_f.write(
-            '{} Preferred: {}\n'.format('+' if predicted_alt[i] == 0 else '-', data['target'][predicted_alt[i]]))
+    # for i, data in enumerate(datas):
+    #     output_f.write('Query: {}\n'.format(data['query']))
+    #     output_f.write('Retrieved: {}\n'.format(' | '.join(retrieved_statements[i])))
+    #     gen = dic[predicted_tokens_list[i][0]] if dic else predicted_tokens_list[i][0]
+    #     output_f.write('Generated: {}\n'.format(gen))
+    #     output_f.write('Alternatives: {}\n'.format(data['target']))
+    #     output_f.write(
+    #         '{} Preferred: {}\n'.format('+' if predicted_alt[i] == 0 else '-', data['target'][predicted_alt[i]]))
 
-        output_f.write('\n')
+    #     output_f.write('\n')
+    for i, d in enumerate(datas):
+        o = {}
+        o['query'] = d['query']
+        o['retrieved_statements'] = retrieved_statements[i]
+        o['alternatives'] = d['target']
+        o['ranked_target'] = d['target'][predicted_alt[i]]
+        o['ranked_correctly'] = True if predicted_alt[i] == 0 else False
+        o['predicted'] = dic[predicted_tokens_list[i][0]] if dic else predicted_tokens_list[i][0]
+
+        output_f.write(json.dumps(o) + '\n')
 
 
 def save_qa_report(datas, queries, retrieved_statements, predicted_ans_list, output_f=None):
-    for i, data in enumerate(datas):
-        output_f.write('Query: {}\n'.format(queries[i]))
-        output_f.write('Retrieved: {}\n'.format(' | '.join(retrieved_statements[i])))
-        output_f.write('Expected: {}\n'.format(data['answer'][0]))
-        output_f.write('Generated: {}\n'.format(predicted_ans_list[i]))
+    # for i, data in enumerate(datas):
+    #     output_f.write('Query: {}\n'.format(queries[i]))
+    #     output_f.write('Retrieved: {}\n'.format(' | '.join(retrieved_statements[i])))
+    #     output_f.write('Expected: {}\n'.format(data['answer'][0]))
+    #     output_f.write('Generated: {}\n'.format(predicted_ans_list[i]))
 
-        output_f.write('\n')
+    #     output_f.write('\n')
+    for i, data in enumerate(datas):
+        o = {}
+        o['query'] = queries[i]
+        o['retrieved_statements'] = retrieved_statements[i]
+        o['answer'] = data['answer'][0]
+        o['response'] = predicted_ans_list[i]
+
+        output_f.write(json.dumps(o) + '\n')
 
 
 def id_to_txt_from_dictionary(ids, d):

@@ -78,7 +78,7 @@ def test_lm(parsed_args):
     if args.knnlm:
         knn_dstore = Reason_KNN_Dstore(args)
 
-    ret_lm = RetLM(models, d, cuda=use_cuda)
+    ret_lm = RetLM(models, d, cuda=use_cuda, task=args.reason_task)
 
     logger.info('Start inference')
     hitsk = [1, 5]
@@ -102,7 +102,7 @@ def test_lm(parsed_args):
             continue
 
         facts_info = ret_lm.get_fact_keys_vals(facts, args=args)
-        o = ret_lm.do_lm(query, sample_id, target_tokens, args=args, knn_dstore=knn_dstore, facts_info=facts_info)
+        o = ret_lm.get_answer(query, sample_id, target_tokens, args=args, knn_dstore=knn_dstore, facts_info=facts_info)
 
         logits = o['logits']
         targets = o['target']
@@ -135,13 +135,14 @@ def test_lm(parsed_args):
         save_lm_report(datas, retrieved_statements, best_alternatives, predicted_tokens_list, output_f=output_f,
                        dic=d)
     top1, top5 = top[1], top[5]
-    output_f.write('\nHits@1: {:.4f}, Hits@5: {:.4f}'.format(float(top1) / all_valid_samples,
-                                                             float(top5) / all_valid_samples))
     print('\nHits@1: {:.4f}, Hits@5: {:.4f}'.format(float(top1) / all_valid_samples,
                                                     float(top5) / all_valid_samples))
-    output_f.write('\n% Correct Alternative Prediction: {}\n'.format(float(alternative_prediction) / all_valid_samples))
-    print('% Correct Alternative Prediction: {}'.format(float(alternative_prediction) / all_valid_samples))
-
+    print('% Target ranking accuracy: {}'.format(float(alternative_prediction) / all_valid_samples))
+    output_f.write(json.dumps({"scores": 
+                                   {"Target ranking accuracy": "{:.4f}".format(float(alternative_prediction) / all_valid_samples),
+                                    "Hits@1": "{:.4f}".format(float(top1) / all_valid_samples), 
+                                    "Hits@5": "{:.4f}".format(float(top5) / all_valid_samples)}, 
+                                    "# examples": all_valid_samples}) + '\n')
     output_f.close()
 
 
@@ -195,7 +196,9 @@ def test_qa(parsed_args):
     knn_dstore = None
     if args.knnlm:
         knn_dstore = Reason_KNN_Dstore(args)
-    ret_lm = RetLM(models, d, cuda=use_cuda)
+    if args.reason_dataset == 'strategyqa':
+        args.reason_task = 'compare_qa'
+    ret_lm = RetLM(models, d, cuda=use_cuda, task=args.reason_task)
     # print('param#', sum(p.numel() for p in models[0].parameters()))
 
     logger.info('Start inference')
@@ -218,11 +221,19 @@ def test_qa(parsed_args):
             facts = clean_str([data['hypothesis']])
         else:
             ValueError('{} is not a valid fact-type argument.'.format(args.reason_fact_type))
+
+        if args.reason_dataset == 'strategyqa':
+            options = answer.copy()
+            options.sort()
+            options.reverse()
+            facts = [f + ' ' + ' / '.join(options) + ' .' for f in facts]
+            query += ' [MASK]'
+        
         if len(facts) < 1:
             continue
 
         facts_info = ret_lm.get_fact_keys_vals(facts, args=args)
-        o = ret_lm.do_qa(query, sample_id, args=args, knn_dstore=knn_dstore, facts_info=facts_info)
+        o = ret_lm.get_answer(query, answer, sample_id, args=args, knn_dstore=knn_dstore, facts_info=facts_info)
 
         p, r, f = compute_f1_score(o['answer'], answer[0], d)
         f_scores.append(f)
@@ -247,12 +258,11 @@ def test_qa(parsed_args):
                                                                                           np.mean(p_scores),
                                                                                           np.mean(r_scores),
                                                                                           all_valid_samples))
-    output_f.write(
-        '\nF1 {:.4f}, Precision {:.4f}, Recall {:.4f}, Total number of example {}\n'.format(np.mean(f_scores),
-                                                                                            np.mean(p_scores),
-                                                                                            np.mean(r_scores),
-                                                                                            all_valid_samples))
-
+    output_f.write(json.dumps({"scores": 
+                               {"F1": "{:.4f}".format(np.mean(f_scores)), 
+                                "Precision": "{:.4f}".format(np.mean(p_scores)), 
+                                "Recall": "{:.4f}".format(np.mean(r_scores))},
+                                "# examples": all_valid_samples}) + '\n')
     output_f.close()
 
 

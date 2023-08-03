@@ -68,8 +68,8 @@ class Reason_KNN_Dstore(object):
             seen_vals_indices = torch.tensor(list(seen_vals.values()))
 
             topk_probs = torch.log(probs[seen_vals_indices])
-            topk_indices = topk_indices[seen_vals_indices]
             topk_retrieved_tokens = [np.append(src_vals[ret_i], target_vals[ret_i]) for ret_i in topk_indices]
+            topk_indices = topk_indices[seen_vals_indices]
             topk_retrieved_tokens_all.append(topk_retrieved_tokens)
 
             knn_probs[q_id, torch.tensor(target_vals[topk_indices], dtype=torch.int64).view(-1).cuda()] = topk_probs
@@ -78,11 +78,20 @@ class Reason_KNN_Dstore(object):
 
 
 class RetLM():
-    def __init__(self, models, d, cuda=False):
+    def __init__(self, models, d, cuda=False, task=None):
         assert len(models) == 1, 'len(models)==1 for kNN-LM experiments.'
         self.models = models
         self.dic = d
         self.cuda = cuda
+        self.task = task
+        if task == 'qa':
+            self.get_answer = self.do_qa
+        elif task == 'compare_qa':
+            self.get_answer = self.do_comparison_qa
+        elif task == 'lm':
+            self.get_answer = self.do_lm
+        else:
+            ValueError('Invalid task for RetLM.')
 
     def get_fact_keys_vals(self, facts, args=None):
         facts_info = {'sample': [], 'fact_unks': [], 'fact_replaced': [], 'hypos': []}
@@ -153,7 +162,6 @@ class RetLM():
     @torch.no_grad()
     def do_lm(self, query, sample_id, target_tokens, args=None, compute_alignment=False, knn_dstore=None,
               facts_info=None):
-
         sample, query_unks, query_replaced, target_ids = binarize_with_target(query, sample_id, target_tokens, self.dic)
         sample = utils.move_to_cuda(sample) if self.cuda else sample
 
@@ -295,7 +303,7 @@ class RetLM():
                 'true_score': hypos[0]['score']
                 }
 
-    def do_qa(self, query, sample_id, args=None, compute_alignment=False, knn_dstore=None, facts_info=None):
+    def do_qa(self, query, _, sample_id, args=None, compute_alignment=False, knn_dstore=None, facts_info=None):
         sample, query_unks, query_replaced = binarize(query, sample_id, self.dic)
         sample = utils.move_to_cuda(sample) if self.cuda else sample
 
@@ -345,6 +353,10 @@ class RetLM():
         from misc_utils import id_to_txt_from_dictionary
         retrieveds = id_to_txt_from_dictionary(retrieveds, self.dic)
         return {'query': query, 'retrieved': retrieveds, 'answer': pred_ans}
+
+    def do_comparison_qa(self, query, targets, sample_id, args=None, compute_alignment=False, knn_dstore=None, facts_info=None):
+        lm_o = self.do_lm(query, sample_id, targets, args=args, compute_alignment=compute_alignment, knn_dstore=knn_dstore, facts_info=facts_info)
+        return {'query': query, 'retrieved': lm_o['retrieved'], 'answer': targets[lm_o['predicted_alt']]}
 
 
 def collate(sample, pad_idx, eos_idx):
