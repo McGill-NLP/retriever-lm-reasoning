@@ -11,6 +11,7 @@ def add_my_args(options):
     group.add_argument("--reason_k", type=int, default=5)
     group.add_argument("--reason_task", type=str, default='lm')
     group.add_argument("--reason_dataset", type=str, required=True)  # strategyqa, entailmentbank
+    group.add_argument("--reason_flan", type=str)  # flan-t5-base, etc.
 
     return group
 
