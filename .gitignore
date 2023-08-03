@@ -2,4 +2,6 @@
 
 /logs/
 /data/
-/knnlm/fairseq/
+
+/knnlm/checkpoints/
+/knnlm/data-bin/
