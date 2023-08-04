@@ -215,7 +215,7 @@ A list of the script arguments is explained below:
 - faiss-gpu (tested with 1.7.2)
 - numpy
 
-You may want to use `contriever/atlas_environment.yml` as well.
+You may want to use `contriever/contriever_environment.yml` as well.
 
 ##### Experiments
 In order to run the ATLAS experiments, you must first download the preferred model from [ATLAS github](https://github.com/facebookresearch/atlas). In our experiments we load the `models/atlas_nq/base` ATLAS model.
@@ -225,7 +225,7 @@ cd contriever
 port=$(shuf -i 15000-16000 -n 1)
 
 #QA
-python evaluate_reasoning.py \
+python evaluate_atlas_reasoning.py \
   --generation_max_length 16 --name reason --precision fp32 --text_maxlength 512 \
   --reader_model_type google/t5-base-lm-adapt \ # architecture of Atlas
   --model_path <address to the model checkpoint - atlas_data/models/...> \
@@ -237,7 +237,7 @@ python evaluate_reasoning.py \
   --reason_dataset <entailmentbank / strategyqa>
   
 #LM
-python evaluate_reasoning.py \
+python evaluate_atlas_reasoning.py \
   --generation_max_length 16 --name reason --precision fp32 --text_maxlength 512\
   --reader_model_type google/t5-base-lm-adapt \ # architecture of Atlas
   --model_path <address to the model checkpoint - atlas_data/models/...> \
@@ -258,48 +258,55 @@ A list of the script arguments is explained below:
 - `reason_dataset`: 'strategyqa' | 'entailmentbank'
 </p></details>
 
-<details><summary>5. DPR + Flan-T5</summary>
+<details><summary>5. Contriever + Flan-T5</summary>
 <p>
 
 ##### Dependencies
-- python 3 (tested with 3.7)
+- python 3 (tested with 3.8)
 - pytorch (tested with 1.11.0)
-- transformers (tested with 4.20.1)
-- faiss (tested with 1.5.3)
-- faiss-cpu (tested with 1.6.1)
+- transformers (tested with 4.18.0)
+- faiss-gpu (tested with 1.7.2)
 - numpy
 
-You may want to use `dpr/flan_environment.yml` as well.
+You may want to use `contriever/contriever_environment.yml` as well.
 
 ##### Experiments
-In order to run the flan-t5 experiments, you must first prepare the [DPR retriever](https://github.com/facebookresearch/DPR). In these experiments, we load the `nq_retriever` checkpoints. As the model, we load the `google/flan-t5-base` checkpoints of the Flan-T5 model available in [HuggingFace](https://huggingface.co/google/flan-t5-base). The following scripts run all kinds of experiments. `dpr` arguments refer to the retriever's arguments, and `reason` arguments, refer to the specific arguments for our experiments. 
+In order to run the flan-t5 experiments, you must first download the preferred model from [ATLAS github](https://github.com/facebookresearch/atlas). In our experiments we load the `models/atlas_nq/base` ATLAS model.
+The following scripts run all kinds of experiments.
 ```bash
-cd dpr
+cd contriever
+port=$(shuf -i 15000-16000 -n 1)
 
 #QA
-python evaluate_reasoning.py \
-  dpr.model_file=<absolute address of the retriever .cp file> \
-  reason.data_file=<absolute address of the preprocessed json data file> \
-  reason.output_file=<absolute address of a report.txt file> \
-  reason.k=5 \
-  reason.lm=flan \
-  reason.task=qa
+python evaluate_flan_reasoning.py \
+  --generation_max_length 16 --name reason --precision fp32 --text_maxlength 512 \
+  --reader_model_type google/t5-base-lm-adapt \ # architecture of Atlas
+  --model_path <address to the model checkpoint - atlas_data/models/...> \
+  --per_gpu_batch_size 1 --checkpoint_dir atlas_data/experiments --main_port $port \
+  --reason_data_file <absolute address of the preprocessed json data file> \
+  --reason_output_file <absolute address of a report.txt file> \
+  --reason_k 5 \
+  --reason_task qa \
+  --reason_dataset <entailmentbank / strategyqa>
   
 #LM
-python evaluate_reasoning.py \
-  dpr.model_file=<absolute address of the retriever .cp file> \
-  reason.data_file=<absolute address of the preprocessed json data file> \
-  reason.output_file=<absolute address of a report.txt file> \
-  reason.k=5 \
-  reason.lm=flan \
-  reason.task=lm
+python evaluate_flan_reasoning.py \
+  --generation_max_length 16 --name reason --precision fp32 --text_maxlength 512\
+  --reader_model_type google/t5-base-lm-adapt \ # architecture of Atlas
+  --model_path <address to the model checkpoint - atlas_data/models/...> \
+  --per_gpu_batch_size 1 --checkpoint_dir atlas_data/experiments --main_port $port \
+  --reason_data_file <absolute address of the preprocessed json data file> \
+  --reason_output_file <absolute address of a report.txt file> \
+  --reason_k 5 \
+  --reason_task lm \
+  --reason_dataset <entailmentbank / strategyqa>
 ```
 
 A list of the script arguments is explained below:
-- `k`: number of retrieved statements
-- `data_file`: absolute address of the preprocessed json data file with the above-mentioned format
-- `output_file`: absolute address of a report.txt file
-- `task`: 'qa' | 'lm'
-- `fact_type`: 'facts' (default, use `facts` key) | 'gold_facts' (use `gold_facts` key) | 'single_fact' (use `hypothesis` key)
-- `lm`: 'flan' ('flan' and 'fid' models use the same base code in our experiments.)
+- `reason_k`: number of retrieved statements
+- `reason_data_file`: absolute address of the preprocessed json data file with the above-mentioned format
+- `reason_output_file`: absolute address of a report.txt file
+- `reason_task`: 'qa' | 'lm'
+- `reason_fact_type`: 'facts' (default, use `facts` key) | 'gold_facts' (use `gold_facts` key) | 'single_fact' (use `hypothesis` key)
+- `reason_dataset`: 'strategyqa' | 'entailmentbank'
 </p></details>
