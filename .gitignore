@@ -8,7 +8,7 @@ __pycache__/
 
 /my_data/
 /my_logs/
-/tests/_
+/tests/
 
 /knnlm/checkpoints/
 /knnlm/data-bin/
