@@ -63,7 +63,7 @@ class RetAtlas(RetLM):
 
         for k in range(len(batch_answers)):
             if len(batch["passages"][k]) < 1:
-                continue
+                return False, None
             retrieved_passages = None
             alt_num = len(batch_answers[k])
             query = [batch_query[k]]
@@ -106,12 +106,12 @@ class RetAtlas(RetLM):
             retrieved.append([p['text'] for p in retrieved_passages[0]])
             predicted_tokens_list.append(self.reader_tokenizer.decode(first_token_pred))
             total += 1
-            return {'hits1': first_token_prediction_num,
-                    'first_token_pred': predicted_tokens_list,
-                    'retrieved': retrieved,
-                    'predicted_alt': best_alternatives,
-                    'example': examples
-                    }
+            return True, {'hits1': first_token_prediction_num,
+                            'first_token_pred': predicted_tokens_list,
+                            'retrieved': retrieved,
+                            'predicted_alt': best_alternatives,
+                            'example': examples
+                            }
 
     def do_qa(self, batch, opt=None):
         if len(batch["passages"][0]) < 1:
@@ -226,7 +226,7 @@ class RetFlan(RetLM):
 
         for k in range(len(batch_answers)):
             if len(batch["passages"][k]) < 1:
-                continue
+                return False, None
             retrieved_passages = None
             alt_num = len(batch_answers[k])
             query = [batch_query[k]]
@@ -271,12 +271,12 @@ class RetFlan(RetLM):
             retrieved.append([p['text'] for p in retrieved_passages[0]])
             predicted_tokens_list.append(self.tokenizer.decode(first_token_pred))
             total += 1
-            return {'hits1': first_token_prediction_num,
-                    'first_token_pred': predicted_tokens_list,
-                    'retrieved': retrieved,
-                    'predicted_alt': best_alternatives,
-                    'example': examples
-                    }
+            return True, {'hits1': first_token_prediction_num,
+                            'first_token_pred': predicted_tokens_list,
+                            'retrieved': retrieved,
+                            'predicted_alt': best_alternatives,
+                            'example': examples
+                            }
 
     def do_qa(self, batch, opt=None):
         if len(batch["passages"][0]) < 1:

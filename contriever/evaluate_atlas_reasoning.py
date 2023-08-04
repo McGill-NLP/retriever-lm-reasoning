@@ -61,7 +61,9 @@ def evaluate_lm(model, opt, step=None):
     data_iterator = _get_eval_data_iterator(opt, opt.reason_data_file, task)
 
     for i, batch in enumerate(data_iterator):
-        o = ret_lm.get_answer(batch, opt=opt)
+        valid, o = ret_lm.get_answer(batch, opt=opt)
+        if not valid:
+            continue
         predicted_tokens_list += o['first_token_pred']
         best_alternatives += o['predicted_alt']
         retrieved_statements += o['retrieved']
