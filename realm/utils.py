@@ -89,7 +89,7 @@ class RetLM():
                     'targets': targets,
                     'query_is_valid': query_is_valid
                     }
-        elif self.lm_task == 'pred':
+        elif self.lm_task == 'prediction':
             target_texts = target_texts[:1]
             targets = self.tokenizer(target_texts, return_tensors="pt", max_length=512, truncation=True,
                                      padding=True).input_ids[:, 1:-1]
@@ -198,6 +198,7 @@ class RetLM():
             enriched_q = []
             for i in range(alt_num):
                 texts = []
+                true_tokens[i][true_tokens[i] == 103] = targets[i].to(self.device)
                 enriched_q.append(masked_query_text[i] + " [SEP] ")
                 for j in range(len(relevant_candidates[i])):
                     tmp = candidates_texts[relevant_candidates[i, j]]
@@ -208,6 +209,7 @@ class RetLM():
                     retrieved_statements[i].append(candidate_text_)
                     enriched_q[-1] += candidate_text_ + " | "
                     texts.append('{} [SEP] {}'.format(masked_query_text[i], candidate_text_))
+                # print(texts)
                 inputs = self.tokenizer(texts, return_tensors="pt", max_length=512, truncation=True, padding=True).to(
                     self.device)
                 outputs = self.encoder(**inputs)
