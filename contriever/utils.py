@@ -174,8 +174,8 @@ class RetAtlas(RetLM):
         predicted_alt = torch.argmin(target_losses)
         return True, {'query': query[0],
                       'retrieved': [p['text'] for p in retrieved_passages[0]],
-                      'gen_ans': ' '.join(answers[0][predicted_alt].split()[1:]),
-                      'example': {'question': query[0], 'answer': [' '.join(answers[0][0].split()[1:])]}}
+                      'gen_ans': answers[0][predicted_alt][opt.qa_answer_format.index('{target}'):],
+                      'example': {'question': query[0], 'answer': [answers[0][0][opt.qa_answer_format.index('{target}'):]]}}
 
 
 class RetFlan(RetLM):
@@ -313,22 +313,24 @@ class RetFlan(RetLM):
         batch_metadata = batch.get("metadata")
         target_tokens = batch.get("target_tokens")
 
-        retrieved_passages = None
         alt_num = len(answers[0])
-        query = [query[0]]
         target_losses = torch.zeros(alt_num)
-        for alt_i in range(alt_num):
-            # retrieve
-            query_enc, labels, decoder_input_ids = self.unwrapped_model.tokenize(query, [answers[0][alt_i]],
-                                                                                 target_tokens=target_tokens)
-            if not retrieved_passages:
-                retrieved_passages = self.retrieve_topk(query, query_enc, batch, batch_metadata=batch_metadata, opt=opt)
-            reader_tokens, _ = self.unwrapped_model.tokenize_passages(query, retrieved_passages)
 
-            loss, _ = self.unwrapped_model.compute_reader_loss_and_logits(reader_tokens, decoder_input_ids, labels)
-            target_losses[alt_i] = loss
+        query_enc, _, _ = self.unwrapped_model.tokenize(query, answers[0], target_tokens=target_tokens)
+        # retrieve
+        retrieved_passages = self.retrieve_topk(query, query_enc, batch, batch_metadata=batch_metadata, opt=opt)
+
+        context_ids, context_mask = self.encode_example(query, retrieved_passages, qa_template="Answer the following question.\n{} {}")
+        label_ids, _ = self.encode_target(answers[0])
+        for alt_i in range(alt_num):
+            labels_output = self.flan(input_ids=context_ids.cuda(),
+                                      attention_mask=context_mask.cuda(),
+                                      labels=label_ids[alt_i].unsqueeze(0).cuda())
+
+            target_losses[alt_i] = labels_output[0]
+
         predicted_alt = torch.argmin(target_losses)
         return True, {'query': query[0],
                       'retrieved': [p['text'] for p in retrieved_passages[0]],
-                      'gen_ans': ' '.join(answers[0][predicted_alt].split()[1:]),
-                      'example': {'question': query[0], 'answer': [' '.join(answers[0][0].split()[1:])]}}
+                      'gen_ans': answers[0][predicted_alt][opt.qa_answer_format.index('{target}'):],
+                      'example': {'question': query[0], 'answer': [answers[0][0][opt.qa_answer_format.index('{target}'):]]}}
