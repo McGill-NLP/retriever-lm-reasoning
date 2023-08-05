@@ -288,6 +288,7 @@ python evaluate_flan_reasoning.py \
   --reason_k 5 \
   --reason_task qa \
   --reason_dataset <entailmentbank / strategyqa>
+  --reason_flan <flan-t5-small, flan-t5-base, flan-t5-large, flan-t5-xl, flan-t5-xxl>
   
 #LM
 python evaluate_flan_reasoning.py \
@@ -300,6 +301,7 @@ python evaluate_flan_reasoning.py \
   --reason_k 5 \
   --reason_task lm \
   --reason_dataset <entailmentbank / strategyqa>
+  --reason_flan <flan-t5-small, flan-t5-base, flan-t5-large, flan-t5-xl, flan-t5-xxl>
 ```
 
 A list of the script arguments is explained below:
@@ -309,4 +311,7 @@ A list of the script arguments is explained below:
 - `reason_task`: 'qa' | 'lm'
 - `reason_fact_type`: 'facts' (default, use `facts` key) | 'gold_facts' (use `gold_facts` key) | 'single_fact' (use `hypothesis` key)
 - `reason_dataset`: 'strategyqa' | 'entailmentbank'
+- `reason_flan`: optional flan model to evaluate (used basically for model size evaluations) 'flan-t5-small' | 'flan-t5-base' | 'flan-t5-large' | 'flan-t5-xl' | 'flan-t5-xxl'
 </p></details>
+
+In order to reproduce the visualizations in the paper, please run `tests/create_visualization_data.py` to export the results. Then, you might want to copy the results to the `visualization.ipynb`.
