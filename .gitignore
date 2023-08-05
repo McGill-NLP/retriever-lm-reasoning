@@ -19,3 +19,6 @@ __pycache__/
 
 /contriever/atlas_data/models/
 /contriever/atlas_data/experiments/reason/
+
+/dsp/atlas_data/models/
+/dsp/atlas_data/experiments/reason/
