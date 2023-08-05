@@ -142,6 +142,7 @@ def test_lm(args):
 
         if len(facts) < 1:
             continue
+
         candidates_info = {'text': facts}
         retrieve_k = min(len(facts), args.reason_k)
 

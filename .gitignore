@@ -4,6 +4,11 @@
 /logs/
 /data/
 __pycache__/
+/slurm
+
+/my_data/
+/my_logs/
+/tests/
 
 /knnlm/checkpoints/
 /knnlm/data-bin/

@@ -128,7 +128,7 @@ python evaluate_reasoning.py data-bin/wikitext-103 \
   --model-overrides "{'knn_keytype': 'last_ffn_input'}" --knn-keytype 'last_ffn_input' \
   --knnlm --k 5 --lmbda 0.65 \
   --reason_data_file <absolute address of the preprocessed json data file> \
-  --reason_output_file <absolute address of a report.txt file> \
+  --reason_output_file <absolute address of a report.jsonl file> \
   --reason_task qa \
   --reason_dataset <entailmentbank / strategyqa>
   
@@ -139,7 +139,7 @@ python evaluate_reasoning.py data-bin/wikitext-103 \
   --model-overrides "{'knn_keytype': 'last_ffn_input'}" --knn-keytype 'last_ffn_input' \
   --knnlm --k 5 --lmbda 0.65 \
   --reason_data_file <absolute address of the preprocessed json data file> \
-  --reason_output_file <absolute address of a report.txt file> \
+  --reason_output_file <absolute address of a report.jsonl file> \
   --reason_task lm \
   --reason_dataset <entailmentbank / strategyqa>
 ```
@@ -147,7 +147,7 @@ python evaluate_reasoning.py data-bin/wikitext-103 \
 A list of the script arguments is explained below:
 - `k`: number of retrieved statements
 - `reason_data_file`: absolute address of the preprocessed json data file with the above-mentioned format
-- `reason_output_file`: absolute address of a report.txt file
+- `reason_output_file`: absolute address of a report.jsonl file
 - `reason_task`: 'qa' | 'lm'
 - `reason_fact_type`: 'facts' (default, use `facts` key) | 'gold_facts' (use `gold_facts` key) | 'single_fact' (use `hypothesis` key)
 - `reason_dataset`: 'entailmentbank' | 'strategyqa'
@@ -178,7 +178,7 @@ python evaluate_reasoning.py \
   lm.model_path=<absolute address of the pretrained reader directory> \
   lm.per_gpu_batch_size=1 lm.name=reason lm.checkpoint_dir=checkpoint \
   reason.data_file=<absolute address of the preprocessed json data file> \
-  reason.output_file=<absolute address of a report.txt file> \
+  reason.output_file=<absolute address of a report.jsonl file> \
   reason.k=5 \
   reason.task=qa \
   reason.dataset=<entailmentbank / strategyqa>
@@ -190,7 +190,7 @@ python evaluate_reasoning.py \
   lm.model_path=<absolute address of the pretrained reader directory> \
   lm.per_gpu_batch_size=1 lm.name=reason lm.checkpoint_dir=checkpoint \
   reason.data_file=<absolute address of the preprocessed json data file> \
-  reason.output_file=<absolute address of a report.txt file> \
+  reason.output_file=<absolute address of a report.jsonl file> \
   reason.k=5 \
   reason.task=lm \
   reason.dataset=<entailmentbank / strategyqa>
@@ -199,7 +199,7 @@ python evaluate_reasoning.py \
 A list of the script arguments is explained below:
 - `k`: number of retrieved statements
 - `data_file`: absolute address of the preprocessed json data file with the above-mentioned format
-- `output_file`: absolute address of a report.txt file
+- `output_file`: absolute address of a report.jsonl file
 - `task`: 'qa' | 'lm'
 - `fact_type`: 'facts' (default, use `facts` key) | 'gold_facts' (use `gold_facts` key) | 'single_fact' (use `hypothesis` key)
 - `dataset`: 'strategyqa' | 'entailmentbank'
@@ -231,7 +231,7 @@ python evaluate_atlas_reasoning.py \
   --model_path <address to the model checkpoint - atlas_data/models/...> \
   --per_gpu_batch_size 1 --checkpoint_dir atlas_data/experiments --main_port $port \
   --reason_data_file <absolute address of the preprocessed json data file> \
-  --reason_output_file <absolute address of a report.txt file> \
+  --reason_output_file <absolute address of a report.jsonl file> \
   --reason_k 5 \
   --reason_task qa \
   --reason_dataset <entailmentbank / strategyqa>
@@ -243,7 +243,7 @@ python evaluate_atlas_reasoning.py \
   --model_path <address to the model checkpoint - atlas_data/models/...> \
   --per_gpu_batch_size 1 --checkpoint_dir atlas_data/experiments --main_port $port \
   --reason_data_file <absolute address of the preprocessed json data file> \
-  --reason_output_file <absolute address of a report.txt file> \
+  --reason_output_file <absolute address of a report.jsonl file> \
   --reason_k 5 \
   --reason_task lm \
   --reason_dataset <entailmentbank / strategyqa>
@@ -252,7 +252,7 @@ python evaluate_atlas_reasoning.py \
 A list of the script arguments is explained below:
 - `reason_k`: number of retrieved statements
 - `reason_data_file`: absolute address of the preprocessed json data file with the above-mentioned format
-- `reason_output_file`: absolute address of a report.txt file
+- `reason_output_file`: absolute address of a report.jsonl file
 - `reason_task`: 'qa' | 'lm'
 - `reason_fact_type`: 'facts' (default, use `facts` key) | 'gold_facts' (use `gold_facts` key) | 'single_fact' (use `hypothesis` key)
 - `reason_dataset`: 'strategyqa' | 'entailmentbank'
@@ -284,7 +284,7 @@ python evaluate_flan_reasoning.py \
   --model_path <address to the model checkpoint - atlas_data/models/...> \
   --per_gpu_batch_size 1 --checkpoint_dir atlas_data/experiments --main_port $port \
   --reason_data_file <absolute address of the preprocessed json data file> \
-  --reason_output_file <absolute address of a report.txt file> \
+  --reason_output_file <absolute address of a report.jsonl file> \
   --reason_k 5 \
   --reason_task qa \
   --reason_dataset <entailmentbank / strategyqa>
@@ -296,7 +296,7 @@ python evaluate_flan_reasoning.py \
   --model_path <address to the model checkpoint - atlas_data/models/...> \
   --per_gpu_batch_size 1 --checkpoint_dir atlas_data/experiments --main_port $port \
   --reason_data_file <absolute address of the preprocessed json data file> \
-  --reason_output_file <absolute address of a report.txt file> \
+  --reason_output_file <absolute address of a report.jsonl file> \
   --reason_k 5 \
   --reason_task lm \
   --reason_dataset <entailmentbank / strategyqa>
@@ -305,7 +305,7 @@ python evaluate_flan_reasoning.py \
 A list of the script arguments is explained below:
 - `reason_k`: number of retrieved statements
 - `reason_data_file`: absolute address of the preprocessed json data file with the above-mentioned format
-- `reason_output_file`: absolute address of a report.txt file
+- `reason_output_file`: absolute address of a report.jsonl file
 - `reason_task`: 'qa' | 'lm'
 - `reason_fact_type`: 'facts' (default, use `facts` key) | 'gold_facts' (use `gold_facts` key) | 'single_fact' (use `hypothesis` key)
 - `reason_dataset`: 'strategyqa' | 'entailmentbank'
