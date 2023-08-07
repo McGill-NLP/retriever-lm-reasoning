@@ -179,10 +179,41 @@ class RetAtlas(RetLM):
 
 
 class RetFlan(RetLM):
-    def __init__(self, unwrapped_model, model, reader_tokenizer, flan, tokenizer, task=None, index=None, reason_task=''):
+    def __init__(self, unwrapped_model, model, reader_tokenizer, flan, tokenizer, task=None, index=None, reason_task='', few_shot=None):
         super().__init__(unwrapped_model, model, reader_tokenizer, task=task, index=index, reason_task=reason_task)
         self.flan = flan
         self.tokenizer = tokenizer
+        self.few_shot = few_shot
+        if not few_shot:
+            self.qa_template = "Answer the following question.\n{} {}"
+        else:
+            from few_shot_data import train, yes_no_train
+            if few_shot == 'short':
+                qa_template = 'Please answer questions with very short answers.\n---\n\n'
+                for ex in train:
+                    context = ""
+                    for p_id, p in enumerate(ex['context']):
+                        context += "[{}] {}\n".format(p_id + 1, p)
+                        qa_template += 'Context:\n{}\nQuestion: {}\n\nAnswer: {}\n\n'.format(context, ex['question'], ex['answer'])
+                qa_template += '---\n\nFollow the following format.\n\n' \
+                    'Context:\n${{sources that may contain relevant content}}\n\nQuestion: ${{the question to be answered}}\n\nAnswer: ${{a very short answer}}\n\n---\n\n' \
+                    'Context:\n{}\nQuestion: {}\n\nAnswer: '
+                self.qa_template = qa_template
+            elif few_shot == 'boolean':
+                qa_template = 'Please answer questions with yes or no.\n---\n\n'
+                for ex in yes_no_train:
+                    context = ""
+                    for p_id, p in enumerate(ex['context']):
+                        context += "[{}] {}\n".format(p_id + 1, p)
+                    qa_template += 'Context:\n{}\nQuestion: {}\n\nAnswer: {}\n\n'.format(context, ex['question'], ex['answer'])
+                qa_template += '---\n\nFollow the following format.\n\n' \
+                            'Context:\n${{sources that may contain relevant content}}\n\nQuestion: ${{the question to be answered}}\n\nAnswer: ${{yes or no answer}}\n\n---\n\n' \
+                            'Context:\n{}\nQuestion: {}\n\nAnswer: '
+                self.qa_template = qa_template
+            else:
+                ValueError('Invalid fewshot arg', few_shot)
+
+
 
     def encode_target(self, tgts):
         target = self.tokenizer.batch_encode_plus(tgts, max_length=500, padding=True, return_tensors='pt', truncation=True)
@@ -283,6 +314,8 @@ class RetFlan(RetLM):
             return False, None
         query = batch.get("query", [""])
         answers = batch.get("answer", [""])
+        if isinstance(answers[0], list):
+            answers = [answers[0][0]]
         batch_metadata = batch.get("metadata")
         target_tokens = batch.get("target_tokens")
 
@@ -290,7 +323,7 @@ class RetFlan(RetLM):
         # retrieve
         retrieved_passages = self.retrieve_topk(query, query_enc, batch, batch_metadata=batch_metadata, opt=opt)
 
-        context_ids, context_mask = self.encode_example(query, retrieved_passages, qa_template="Answer the following question.\n{} {}")
+        context_ids, context_mask = self.encode_example(query, retrieved_passages, qa_template=self.qa_template)
         outputs = self.flan.generate(
             input_ids=context_ids.cuda(),
             attention_mask=context_mask.cuda(),
@@ -298,7 +331,7 @@ class RetFlan(RetLM):
         )
 
         ans = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-        gold = batch["answer"][0]
+        gold = answers[0]
 
         return True, {'query': query[0],
                       'retrieved': [p['text'] for p in retrieved_passages[0]],
@@ -320,7 +353,7 @@ class RetFlan(RetLM):
         # retrieve
         retrieved_passages = self.retrieve_topk(query, query_enc, batch, batch_metadata=batch_metadata, opt=opt)
 
-        context_ids, context_mask = self.encode_example(query, retrieved_passages, qa_template="Answer the following question.\n{} {}")
+        context_ids, context_mask = self.encode_example(query, retrieved_passages, qa_template=self.qa_template)
         label_ids, _ = self.encode_target(answers[0])
         for alt_i in range(alt_num):
             labels_output = self.flan(input_ids=context_ids.cuda(),

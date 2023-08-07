@@ -120,14 +120,21 @@ def evaluate_qa(model, opt, step=None):
 
     task = get_task(opt, reader_tokenizer)
     data_iterator = _get_eval_data_iterator(opt, opt.reason_data_file, task)
-    reason_task = 'compare_qa' if opt.reason_dataset == 'strategyqa' else 'qa'
-    ret_lm = RetFlan(unwrapped_model, model, reader_tokenizer, flan, tokenizer, task=task, index=index, reason_task=reason_task)
+    if not opt.reason_fewshot == 'boolean' and not opt.reason_fewshot == 'short':
+        print('--- Not using the fewshot template')
+        opt.reason_fewshot = None
+    else:
+        print('--- Using the fewshot template')
+    reason_task = 'compare_qa' if opt.reason_dataset == 'strategyqa' and not opt.reason_fewshot else 'qa'
+    print('--- task:', reason_task)
+    ret_lm = RetFlan(unwrapped_model, model, reader_tokenizer, flan, tokenizer, task=task, index=index, reason_task=reason_task, few_shot=opt.reason_fewshot)
 
     for i, batch in enumerate(data_iterator):
         is_valid, o = ret_lm.get_answer(batch, opt=opt)
         if not is_valid:
             continue
         gold = o['example']['answer']
+        print(gold[0], o['gen_ans'])
         p, r, f = compute_f1_score(normalize_answer(o['gen_ans']), normalize_answer(gold[0]))
         p_scores.append(p)
         r_scores.append(r)

@@ -13,6 +13,7 @@ def add_my_args(options):
     group.add_argument("--reason_dataset", type=str, required=True)  # strategyqa, entailmentbank
     group.add_argument("--reason_lm", type=str)  # text-davinci-002, google/flan-t5-base, etc.
     group.add_argument("--reason_openai_key", type=str)  # for openai models
+    group.add_argument("--reason_fewshot", type=str)  # short, boolean
 
     return group
 
@@ -76,6 +77,6 @@ def save_qa_report(datas, retrieved_statements, predicted_ans_list, output_f=Non
         o['answer'] = data['answer'][0]
         o['response'] = predicted_ans_list[i]
         if histories:
-            o['histories'] = histories
+            o['histories'] = histories[i]
 
         output_f.write(json.dumps(o) + '\n')
