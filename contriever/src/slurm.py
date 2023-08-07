@@ -22,7 +22,7 @@ GLOO_GROUP = None
 def sig_handler(signum, frame):
     logger.warning("Signal handler called with signal " + str(signum))
 
-    prod_id = int(os.environ["SLURM_PROCID"])
+    prod_id = int(os.environ.get("SLURM_PROCID", 0))
     logger.warning("Host: %s - Global rank: %i" % (socket.gethostname(), prod_id))
     if prod_id == 0:
         logger.warning("Requeuing job " + os.environ["SLURM_JOB_ID"])
@@ -79,7 +79,7 @@ def init_distributed_mode(params):
             "SLURM_TASK_PID",
         ]
 
-        PREFIX = "%i - " % int(os.environ["SLURM_PROCID"])
+        PREFIX = "%i - " % int(os.environ.get("SLURM_PROCID", 0))
         for name in SLURM_VARIABLES:
             value = os.environ.get(name, None)
             # print(PREFIX + "%s: %s" % (name, str(value)))
@@ -88,19 +88,19 @@ def init_distributed_mode(params):
         # params.job_id = os.environ['SLURM_JOB_ID']
 
         # number of nodes / node ID
-        params.n_nodes = int(os.environ["SLURM_JOB_NUM_NODES"])
-        params.node_id = int(os.environ["SLURM_NODEID"])
+        params.n_nodes = int(os.environ.get("SLURM_JOB_NUM_NODES", 1))
+        params.node_id = int(os.environ.get("SLURM_NODEID", 0))
 
         # local rank on the current node / global rank
-        params.local_rank = int(os.environ["SLURM_LOCALID"])
-        params.global_rank = int(os.environ["SLURM_PROCID"])
+        params.local_rank = int(os.environ.get("SLURM_LOCALID", 0))
+        params.global_rank = int(os.environ.get("SLURM_PROCID", 0))
 
         # number of processes / GPUs per node
         params.world_size = int(os.environ.get("SLURM_NTASKS", '1'))
         params.n_gpu_per_node = params.world_size // params.n_nodes
 
         # define master address and master port
-        hostnames = subprocess.check_output(["scontrol", "show", "hostnames", os.environ["SLURM_JOB_NODELIST"]])
+        hostnames = subprocess.check_output(["scontrol", "show", "hostnames", os.environ.get("SLURM_JOB_NODELIST", "0")])
         params.main_addr = hostnames.split()[0].decode("utf-8")
         assert 10001 <= params.main_port <= 20000 or params.world_size == 1
         # print(PREFIX + "Master address: %s" % params.master_addr)
