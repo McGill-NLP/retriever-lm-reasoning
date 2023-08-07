@@ -68,8 +68,6 @@ def evaluate_qa(model, opt, step=None):
     # print(ret_lm.qa_template)
 
     for i, batch in enumerate(data_iterator):
-        if i > 5:
-            break
         is_valid, o = ret_lm.get_answer(batch, opt=opt)
         if not is_valid:
             continue
