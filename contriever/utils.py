@@ -187,17 +187,17 @@ class RetFlan(RetLM):
         if not few_shot:
             self.qa_template = "Answer the following question.\n{} {}"
         else:
-            from few_shot_data import train, yes_no_train
+            from few_shot_data import short_train, yes_no_train
             if few_shot == 'short':
                 qa_template = 'Please answer questions with very short answers.\n---\n\n'
-                for ex in train:
+                for ex in short_train:
                     context = ""
                     for p_id, p in enumerate(ex['context']):
                         context += "[{}] {}\n".format(p_id + 1, p)
-                        qa_template += 'Context:\n{}\nQuestion: {}\n\nAnswer: {}\n\n'.format(context, ex['question'], ex['answer'])
+                    qa_template += 'Context:\n{}\nQuestion: {}\nAnswer: {}\n\n'.format(context, ex['question'], ex['answer'])
                 qa_template += '---\n\nFollow the following format.\n\n' \
-                    'Context:\n${{sources that may contain relevant content}}\n\nQuestion: ${{the question to be answered}}\n\nAnswer: ${{a very short answer}}\n\n---\n\n' \
-                    'Context:\n{}\nQuestion: {}\n\nAnswer: '
+                    'Context:\n${{sources that may contain relevant content}}\n\nQuestion: ${{the question to be answered}}\nAnswer: ${{a very short answer}}\n\n---\n\n' \
+                    'Context:\n{}\nQuestion: {}\nAnswer: '
                 self.qa_template = qa_template
             elif few_shot == 'boolean':
                 qa_template = 'Please answer questions with yes or no.\n---\n\n'

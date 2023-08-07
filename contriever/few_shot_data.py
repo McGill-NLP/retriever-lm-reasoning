@@ -1,5 +1,5 @@
 
-train = [
+short_train = [
     {'question': 'What is the correct explanation for why we have day and night on Earth?',
      'hypothesis': 'Earth rotating on its axis causes the cycle of day and night on [blank].',
      'context': ["Earth is a kind of planet.",
