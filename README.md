@@ -312,6 +312,51 @@ A list of the script arguments is explained below:
 - `reason_fact_type`: 'facts' (default, use `facts` key) | 'gold_facts' (use `gold_facts` key) | 'single_fact' (use `hypothesis` key)
 - `reason_dataset`: 'strategyqa' | 'entailmentbank'
 - `reason_lm`: optional flan model to evaluate (used basically for model size evaluations) 'google/flan-t5-small' | 'google/flan-t5-base' | 'google/flan-t5-large' | 'google/flan-t5-xl' | 'google/flan-t5-xxl'
+- `reason_fewshot`: optional, if you want to use fewshot examples, use 'boolean' for StrategyQA or 'short' for Entailmentbank experiments. This arg was used to compare Flan and GPT performance vs. the DSP variant.
 </p></details>
 
+<details><summary>6. Demonstrate-Search-Predict</summary>
+<p>
+
+##### Dependencies
+- python 3 (tested with 3.8)
+- pytorch (tested with 1.11.0)
+- transformers (tested with 4.18.0)
+- faiss-gpu (tested with 1.7.2)
+- dsp
+
+You may want to use `contriever/dsp_environment.yml` as well.
+
+##### Experiments
+In order to run the flan-t5 experiments, you must first download the preferred model from [ATLAS github](https://github.com/facebookresearch/atlas). In our experiments we load the `models/atlas_nq/base` ATLAS model.
+The following scripts run all kinds of experiments.
+```bash
+cd contriever
+port=$(shuf -i 15000-16000 -n 1)
+
+#QA
+python evaluate_dsp_reasoning.py \
+  --generation_max_length 16 --name reason --precision fp32 --text_maxlength 512 \
+  --reader_model_type google/t5-base-lm-adapt \ # architecture of Atlas
+  --model_path <address to the model checkpoint - atlas_data/models/...> \
+  --per_gpu_batch_size 1 --checkpoint_dir atlas_data/experiments --main_port $port \
+  --reason_data_file <absolute address of the preprocessed json data file> \
+  --reason_output_file <absolute address of a report.jsonl file> \
+  --reason_k 5 \
+  --reason_task qa \
+  --reason_dataset <entailmentbank / strategyqa> \
+  --reason_lm <google/flan-t5-base, google/flan-t5-xxl, text-davinci-002> \
+  --reason_openai_key <the openai key>
+```
+
+A list of the script arguments is explained below:
+- `reason_k`: number of retrieved statements
+- `reason_data_file`: absolute address of the preprocessed json data file with the above-mentioned format
+- `reason_output_file`: absolute address of a report.jsonl file
+- `reason_task`: 'qa' | 'lm'
+- `reason_fact_type`: 'facts' (default, use `facts` key) | 'gold_facts' (use `gold_facts` key) | 'single_fact' (use `hypothesis` key)
+- `reason_dataset`: 'strategyqa' | 'entailmentbank'
+- `reason_lm`: optional flan model to evaluate (used basically for model size evaluations) 'google/flan-t5-base' | 'google/flan-t5-xxl' | 'text-davinci-002'
+- `reason_fewshot`: use 'boolean' for StrategyQA and 'short' for Entailmentbank experiments
+</p></details>
 In order to reproduce the visualizations in the paper, please run `tests/create_visualization_data.py` to export the results. Then, you might want to copy the results to the `visualization.ipynb`.
