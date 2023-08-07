@@ -47,8 +47,8 @@ def evaluate_lm(model, opt, step=None):
     opt.lm_answer_prefix = '<extra_id_0> '
 
     from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
-    tokenizer = AutoTokenizer.from_pretrained("google/{}".format(opt.reason_flan))
-    flan = AutoModelForSeq2SeqLM.from_pretrained("google/{}".format(opt.reason_flan))
+    tokenizer = AutoTokenizer.from_pretrained(opt.reason_lm, cache_dir='/network/scratch/p/parishad.behnamghader/.cache/')
+    flan = AutoModelForSeq2SeqLM.from_pretrained(opt.reason_lm, cache_dir='/network/scratch/p/parishad.behnamghader/.cache/')
     flan = flan.to(opt.reason_device)
 
     alternative_prediction_num, first_token_prediction_num = 0, 0
@@ -109,8 +109,8 @@ def evaluate_qa(model, opt, step=None):
     datas, retrieved_statements, predicted_tokens_list = [], [], []
 
     from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
-    tokenizer = AutoTokenizer.from_pretrained("google/{}".format(opt.reason_flan))
-    flan = AutoModelForSeq2SeqLM.from_pretrained("google/{}".format(opt.reason_flan))
+    tokenizer = AutoTokenizer.from_pretrained(opt.reason_lm, cache_dir='/network/scratch/p/parishad.behnamghader/.cache/')
+    flan = AutoModelForSeq2SeqLM.from_pretrained(opt.reason_lm, cache_dir='/network/scratch/p/parishad.behnamghader/.cache/')
     flan = flan.to(opt.reason_device)
 
     model.eval()

@@ -11,7 +11,8 @@ def add_my_args(options):
     group.add_argument("--reason_k", type=int, default=5)
     group.add_argument("--reason_task", type=str, default='lm')
     group.add_argument("--reason_dataset", type=str, required=True)  # strategyqa, entailmentbank
-    group.add_argument("--reason_flan", type=str)  # flan-t5-base, etc.
+    group.add_argument("--reason_lm", type=str)  # text-davinci-002, google/flan-t5-base, etc.
+    group.add_argument("--reason_openai_key", type=str)  # for openai models
 
     return group
 
@@ -67,12 +68,14 @@ def save_lm_report(datas, retrieved_statements, best_alternatives, predicted_tok
         output_f.write(json.dumps(o) + '\n')
 
 
-def save_qa_report(datas, retrieved_statements, predicted_ans_list, output_f=None):
+def save_qa_report(datas, retrieved_statements, predicted_ans_list, output_f=None, histories=None):
     for i, data in enumerate(datas):
         o = {}
         o['query'] = data['question']
         o['retrieved_statements'] = retrieved_statements[i]
         o['answer'] = data['answer'][0]
         o['response'] = predicted_ans_list[i]
+        if histories:
+            o['histories'] = histories
 
         output_f.write(json.dumps(o) + '\n')
