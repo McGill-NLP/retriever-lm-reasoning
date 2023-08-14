@@ -3,8 +3,6 @@
 
 This repository contains the source code for the evaluations in [Can Retriever-Augmented Language Models Reason? The Blame Game Between the Retriever and the Language Model](https://arxiv.org/abs/2212.09146).
 
-The code will be updated with DSP and Contriever+Flan experiments soon...
-
 ---
 
 ### Preparing Datasets
@@ -30,7 +28,7 @@ If you wish to use your own data samples, you must follow the following json dat
 [
   {
     "question": "Which event occurs on a daily cycle?", 
-    "answer": ["The Sun rises and sets."], 
+    "answer": ["The Sun rises and sets."], %(for cases like StrategyQA, the answer would be like ["yes", "no"] with "yes" being the correct answer)
     "facts": ["The sun rising / setting occurs once per day."],
     "gold_facts": ["The sun rising / setting occurs once per day."], %(used when evaluating the models with only ground-truth facts)
     "hypothesis": "The sun rising and setting is the event that occurs once per day." %(used when evaluating the models with one single hypothesis sentence.)
@@ -312,7 +310,7 @@ A list of the script arguments is explained below:
 - `reason_fact_type`: 'facts' (default, use `facts` key) | 'gold_facts' (use `gold_facts` key) | 'single_fact' (use `hypothesis` key)
 - `reason_dataset`: 'strategyqa' | 'entailmentbank'
 - `reason_lm`: optional flan model to evaluate (used basically for model size evaluations) 'google/flan-t5-small' | 'google/flan-t5-base' | 'google/flan-t5-large' | 'google/flan-t5-xl' | 'google/flan-t5-xxl'
-- `reason_fewshot`: optional, if you want to use fewshot examples, use 'boolean' for StrategyQA or 'short' for Entailmentbank experiments. This arg was used to compare Flan and GPT performance vs. the DSP variant.
+- `reason_fewshot`: optional, if you want to use fewshot examples, use 'boolean' for StrategyQA or 'short' for Entailmentbank experiments. This arg was used to compare fewshot Flan and GPT performance vs. the DSP variant.
 </p></details>
 
 <details><summary>6. Demonstrate-Search-Predict</summary>
