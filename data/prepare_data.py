@@ -184,17 +184,21 @@ def create_and_write_lm(args=None):
 
 def create_and_write_qa(args=None):
     dataset, output_dataset = [], []
-    assert args.dataset in ['entailmentbank'], 'Add the new dataset\'s preparation process'
+    assert args.dataset in ['entailmentbank', 'strategyqa'], 'Add the new dataset\'s preparation process'
     if args.dataset == 'entailmentbank':
         with open(args.input_file, "r") as f:
             for line in f:
                 dataset.append(json.loads(line))
+    if args.dataset == 'strategyqa':
+        dataset = json.load(open(args.input_file, 'r'))
 
     valid_samples, data_id = 0, 0
     for data_id, data in enumerate(dataset):
         if not 'question' in data or not 'answer' in data:
             continue
         sample_q = data['question']
+        if args.dataset == 'strategyqa':
+            sample_q = data['question'] + " yes or no?"
         sample_a = data['answer']
         sample_facts = [f.capitalize() + '.' for f in re.split(r'\W*sent[0-9]+:\W*', data['context'])[1:]]
 
@@ -204,7 +208,9 @@ def create_and_write_qa(args=None):
              'answer': [sample_a],
              'facts': sample_facts,
              'gold_facts': get_gold_facts(data),
-             'hypothesis': data['hypothesis'].capitalize() + '.'}
+             'hypothesis': data.get('hypothesis', '').capitalize() + '.'}
+        if args.dataset == 'strategyqa':
+            d['answer'] = ["yes", "no"] if d['answer'] == "true" else ["no", "yes"]
         output_dataset.append(d)
     with open('qa/{}.json'.format(args.output_file), 'w') as outfile:
         json.dump(output_dataset, outfile)
