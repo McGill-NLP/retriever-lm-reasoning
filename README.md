@@ -326,8 +326,7 @@ A list of the script arguments is explained below:
 You may want to use `contriever/dsp_environment.yml` as well.
 
 ##### Experiments
-In order to run the flan-t5 experiments, you must first download the preferred model from [ATLAS github](https://github.com/facebookresearch/atlas). In our experiments we load the `models/atlas_nq/base` ATLAS model.
-The following scripts run all kinds of experiments.
+First download the preferred model from [ATLAS github](https://github.com/facebookresearch/atlas). In our experiments we load the `models/atlas_nq/base` ATLAS model.
 ```bash
 cd contriever
 port=$(shuf -i 15000-16000 -n 1)
