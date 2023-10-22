@@ -59,7 +59,7 @@ We evaluate the reasoning abilities of the following retriever-augmented languag
 6. [Contriever + Flan-T5/GPT-3.5 in a DSP framework](https://github.com/stanfordnlp/dspy)
 
 
-You may find the visualization of the results in `visualization.ipynb`. The dependencies for each model is mentioned briefly. You may want to look at each model's repository for more information.
+You may find the visualization of the results in `tests/visualization.ipynb`. The dependencies for each model is mentioned briefly. You may want to look at each model's repository for more information.
 
 <details><summary>1. REALM</summary>
 <p>
@@ -359,4 +359,5 @@ A list of the script arguments is explained below:
 - `reason_lm`: optional flan model to evaluate (used basically for model size evaluations) 'google/flan-t5-base' | 'google/flan-t5-xxl' | 'text-davinci-002'
 - `reason_fewshot`: use 'boolean' for StrategyQA and 'short' for Entailmentbank experiments
 </p></details>
+
 In order to reproduce the visualizations in the paper, please run `tests/create_visualization_data.py` to export the results. Then, you might want to copy the results to the `tests/visualization.ipynb`.
