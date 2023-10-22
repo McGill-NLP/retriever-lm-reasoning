@@ -56,6 +56,7 @@ We evaluate the reasoning abilities of the following retriever-augmented languag
 3. [DPR + FiD](https://github.com/facebookresearch/FiD)
 4. [Contriever + ATLAS](https://github.com/facebookresearch/atlas)
 5. [DPR + Flan-T5](https://huggingface.co/google/flan-t5-base)
+6. [Contriever + Flan-T5/GPT-3.5 in a DSP framework](https://github.com/stanfordnlp/dspy)
 
 
 You may find the visualization of the results in `visualization.ipynb`. The dependencies for each model is mentioned briefly. You may want to look at each model's repository for more information.
@@ -285,6 +286,7 @@ python evaluate_flan_reasoning.py \
   --reason_output_file <absolute address of a report.jsonl file> \
   --reason_k 5 \
   --reason_task qa \
+  --reason_k_type k \
   --reason_dataset <entailmentbank / strategyqa>
   --reason_lm <google/flan-t5-small, google/flan-t5-base, google/flan-t5-large, google/flan-t5-xl, google/flan-t5-xxl>
   
@@ -307,6 +309,7 @@ A list of the script arguments is explained below:
 - `reason_data_file`: absolute address of the preprocessed json data file with the above-mentioned format
 - `reason_output_file`: absolute address of a report.jsonl file
 - `reason_task`: 'qa' | 'lm'
+- `reason_k_type`: 'k' (default, pass 'k' retrieved statements to the lm)| 'gold' (pass statements equal to the number of gold statements to the lm, specifically for blame-game experiments where the number of required statements is a prior knowledge)
 - `reason_fact_type`: 'facts' (default, use `facts` key) | 'gold_facts' (use `gold_facts` key) | 'single_fact' (use `hypothesis` key)
 - `reason_dataset`: 'strategyqa' | 'entailmentbank'
 - `reason_lm`: optional flan model to evaluate (used basically for model size evaluations) 'google/flan-t5-small' | 'google/flan-t5-base' | 'google/flan-t5-large' | 'google/flan-t5-xl' | 'google/flan-t5-xxl'
@@ -356,4 +359,4 @@ A list of the script arguments is explained below:
 - `reason_lm`: optional flan model to evaluate (used basically for model size evaluations) 'google/flan-t5-base' | 'google/flan-t5-xxl' | 'text-davinci-002'
 - `reason_fewshot`: use 'boolean' for StrategyQA and 'short' for Entailmentbank experiments
 </p></details>
-In order to reproduce the visualizations in the paper, please run `tests/create_visualization_data.py` to export the results. Then, you might want to copy the results to the `visualization.ipynb`.
+In order to reproduce the visualizations in the paper, please run `tests/create_visualization_data.py` to export the results. Then, you might want to copy the results to the `tests/visualization.ipynb`.
