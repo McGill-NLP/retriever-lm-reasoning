@@ -131,6 +131,8 @@ def evaluate_qa(model, opt, step=None):
     # print(ret_lm.qa_template)
 
     for i, batch in enumerate(data_iterator):
+        if opt.reason_k_type == "gold":  # Which means we want to retrieve statements the same as the number of gold statements
+            opt.n_context = len(batch["gold_facts"][0])
         is_valid, o = ret_lm.get_answer(batch, opt=opt)
         if not is_valid:
             continue

@@ -9,6 +9,7 @@ def add_my_args(options):
     group.add_argument("--reason_info", type=str, default="")
     group.add_argument("--reason_fact_type", type=str, default='facts')  # facts, gold_facts, single_fact
     group.add_argument("--reason_k", type=int, default=5)
+    group.add_argument("--reason_k_type", type=str, default="k") # k, gold
     group.add_argument("--reason_task", type=str, default='lm')
     group.add_argument("--reason_dataset", type=str, required=True)  # strategyqa, entailmentbank
     group.add_argument("--reason_lm", type=str)  # text-davinci-002, google/flan-t5-base, etc.

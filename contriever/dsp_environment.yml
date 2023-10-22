@@ -1,4 +1,4 @@
-name: /network/scratch/p/parishad.behnamghader/conda_envs/dsp-env
+name: /network/scratch/p/parishad.behnamghader/conda_envs/dsp-env/
 channels:
   - pytorch
   - nvidia
