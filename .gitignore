@@ -2,7 +2,6 @@
 .log
 
 /logs/
-/data/
 __pycache__/
 /slurm
 
